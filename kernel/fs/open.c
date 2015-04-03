@@ -87,27 +87,75 @@ int
 do_open(const char *filename, int oflags)
 {
 	/*long if conditional to test the file access flags*/
-	if(oflags!= O_RDONLY && oflags != O_WRONLY && oflags != O_RDWR && oflags != (O_RDONLY|O_CREAT)
+	/*if(oflags!= O_RDONLY && oflags != O_WRONLY && oflags != O_RDWR && oflags != (O_RDONLY|O_CREAT)
 			&& oflags != (O_WRONLY|O_CREAT) && oflags!=(O_RDWR|O_CREAT) && oflags!=(O_RDONLY|O_APPEND)
 			&& oflags!= (O_WRONLY|O_APPEND) && oflags!= (O_RDWR|O_APPEND)) {
-		/*test*/
+
 		return -EINVAL;
-	}
+	}*/
 	int new_fd = get_empty_fd(curproc);
 	if(new_fd == -EMFILE) {
 		/**/
 		return -EMFILE;
 	}
+	if(strlen(filename) > NAME_LEN) return -ENAMETOOLONG;
+
 	file_t* new_file = fget(new_fd);
 	if(new_file == NULL) {
 		/**/
-		curproc->p_files[new_fd] = NULL;
 		return -ENOMEM;
 	}
-	curproc->p_files[new_fd] = new_file;
-	new_file->f_mode = oflags;
-	fref(new_file);
+	/*set the mode*/
+	/*O_RDONLY, O_WRONLY, O_RDWR, O_RDONLY|O_APPEND,O_WRONLY|O_APPEND,O_RDWR|O_APPEND, O_RDONLY|O_CREAT,O_WRONLY|O_CREAT,O_RDWR|O_CREAT*/
+	int write_found  =0;
 
+	if(oflags == O_RDONLY || oflags == (O_RDONLY|O_CREAT))
+		new_file->f_mode = FMODE_READ;
+	else if(oflags == O_WRONLY || oflags == (O_WRONLY|O_CREAT)){
+		write_found = 1;
+		new_file->f_mode = FMODE_WRITE;
+	}
+	else if(oflags == O_RDWR || oflags == (O_RDWR|O_CREAT)){
+		write_found = 1;
+		new_file->f_mode = FMODE_READ | FMODE_WRITE;
+	}
+	else if(oflags == (O_RDONLY|O_APPEND))
+		new_file->f_mode = FMODE_READ | FMODE_APPEND;
+	else if(oflags == (O_WRONLY|O_APPEND)){
+		write_found = 1;
+		new_file->f_mode = FMODE_WRITE | FMODE_APPEND;
+	}
+	else if(oflags == (O_RDWR|O_APPEND)){
+		write_found = 1;
+		new_file->f_mode = FMODE_READ | FMODE_WRITE | FMODE_APPEND;
+	}
+	else {
+		fput(new_file);
+		return -EINVAL;
+	}
+
+	vnode_t *file_vnode = NULL;
+	int open_resp = open_namev(filename, oflags, &file_vnode, NULL);
+	if(open_resp < 0) {
+		fput(new_file);
+		return open_resp;
+	}
+
+	if(S_ISDIR(file_vnode->vn_mode) && write_found){
+		fput(new_file);
+		return -EISDIR;
+	}
+
+	if((S_ISCHR(file_vnode->vn_mode) || S_ISBLK(file_vnode->vn_mode)) && NULL == file_vnode->vn_devid){
+		fput(new_file);
+		return -ENXIO;
+	}
+
+	new_file->f_vnode = file_vnode;
+	new_file->f_pos = 0;
+
+	curproc->p_files[new_fd] = new_file;
+	return new_fd;
       /*  NOT_YET_IMPLEMENTED("VFS: do_open");
         return -1;*/
 }
