@@ -383,7 +383,7 @@ int do_stat(const char *path, struct stat *buf) {
 	if (path[0] == '/') { /*set the base dir to root file system dir*/
 		/*get root vnode_t*/
 		/*test*/
-		vnode_t root = curproc->p_cwd->vn_fs->fs_root;
+		vnode_t* root = curproc->p_cwd->vn_fs->fs_root;
 		vref(root);
 		lookup(root, path, strlen(path), node); /*this function should be implemented in namev.c*/
 		vput(root);
