@@ -51,11 +51,9 @@
  * In all cases, be sure you do not leak file refcounts by returning before
  * you fput() a file that you fget()'ed.
  */
-int
-do_read(int fd, void *buf, size_t nbytes)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_read");
-        return -1;
+int do_read(int fd, void *buf, size_t nbytes) {
+	NOT_YET_IMPLEMENTED("VFS: do_read");
+	return -1;
 }
 
 /* Very similar to do_read.  Check f_mode to be sure the file is writable.  If
@@ -66,11 +64,9 @@ do_read(int fd, void *buf, size_t nbytes)
  *      o EBADF
  *        fd is not a valid file descriptor or is not open for writing.
  */
-int
-do_write(int fd, const void *buf, size_t nbytes)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_write");
-        return -1;
+int do_write(int fd, const void *buf, size_t nbytes) {
+	NOT_YET_IMPLEMENTED("VFS: do_write");
+	return -1;
 }
 
 /*
@@ -80,11 +76,9 @@ do_write(int fd, const void *buf, size_t nbytes)
  *      o EBADF
  *        fd isn't a valid open file descriptor.
  */
-int
-do_close(int fd)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_close");
-        return -1;
+int do_close(int fd) {
+	NOT_YET_IMPLEMENTED("VFS: do_close");
+	return -1;
 }
 
 /* To dup a file:
@@ -103,11 +97,9 @@ do_close(int fd)
  *        The process already has the maximum number of file descriptors open
  *        and tried to open a new one.
  */
-int
-do_dup(int fd)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_dup");
-        return -1;
+int do_dup(int fd) {
+	NOT_YET_IMPLEMENTED("VFS: do_dup");
+	return -1;
 }
 
 /* Same as do_dup, but insted of using get_empty_fd() to get the new fd,
@@ -119,11 +111,9 @@ do_dup(int fd)
  *        ofd isn't an open file descriptor, or nfd is out of the allowed
  *        range for file descriptors.
  */
-int
-do_dup2(int ofd, int nfd)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_dup2");
-        return -1;
+int do_dup2(int ofd, int nfd) {
+	NOT_YET_IMPLEMENTED("VFS: do_dup2");
+	return -1;
 }
 
 /*
@@ -151,11 +141,9 @@ do_dup2(int ofd, int nfd)
  *      o ENAMETOOLONG
  *        A component of path was too long.
  */
-int
-do_mknod(const char *path, int mode, unsigned devid)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_mknod");
-        return -1;
+int do_mknod(const char *path, int mode, unsigned devid) {
+	NOT_YET_IMPLEMENTED("VFS: do_mknod");
+	return -1;
 }
 
 /* Use dir_namev() to find the vnode of the dir we want to make the new
@@ -172,11 +160,9 @@ do_mknod(const char *path, int mode, unsigned devid)
  *      o ENAMETOOLONG
  *        A component of path was too long.
  */
-int
-do_mkdir(const char *path)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_mkdir");
-        return -1;
+int do_mkdir(const char *path) {
+	NOT_YET_IMPLEMENTED("VFS: do_mkdir");
+	return -1;
 }
 
 /* Use dir_namev() to find the vnode of the directory containing the dir to be
@@ -197,11 +183,9 @@ do_mkdir(const char *path)
  *      o ENAMETOOLONG
  *        A component of path was too long.
  */
-int
-do_rmdir(const char *path)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_rmdir");
-        return -1;
+int do_rmdir(const char *path) {
+	NOT_YET_IMPLEMENTED("VFS: do_rmdir");
+	return -1;
 }
 
 /*
@@ -217,11 +201,9 @@ do_rmdir(const char *path)
  *      o ENAMETOOLONG
  *        A component of path was too long.
  */
-int
-do_unlink(const char *path)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_unlink");
-        return -1;
+int do_unlink(const char *path) {
+	NOT_YET_IMPLEMENTED("VFS: do_unlink");
+	return -1;
 }
 
 /* To link:
@@ -245,11 +227,9 @@ do_unlink(const char *path)
  *      o EISDIR
  *        from is a directory.
  */
-int
-do_link(const char *from, const char *to)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_link");
-        return -1;
+int do_link(const char *from, const char *to) {
+	NOT_YET_IMPLEMENTED("VFS: do_link");
+	return -1;
 }
 
 /*      o link newname to oldname
@@ -260,11 +240,9 @@ do_link(const char *from, const char *to)
  * Linux system call (if unlink fails then two links to the
  * file could exist).
  */
-int
-do_rename(const char *oldname, const char *newname)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_rename");
-        return -1;
+int do_rename(const char *oldname, const char *newname) {
+	NOT_YET_IMPLEMENTED("VFS: do_rename");
+	return -1;
 }
 
 /* Make the named directory the current process's cwd (current working
@@ -280,11 +258,9 @@ do_rename(const char *oldname, const char *newname)
  *      o ENOTDIR
  *        A component of path is not a directory.
  */
-int
-do_chdir(const char *path)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_chdir");
-        return -1;
+int do_chdir(const char *path) {
+	NOT_YET_IMPLEMENTED("VFS: do_chdir");
+	return -1;
 }
 
 /* Call the readdir fs_op on the given fd, filling in the given dirent_t*.
@@ -302,11 +278,32 @@ do_chdir(const char *path)
  *      o ENOTDIR
  *        File descriptor does not refer to a directory.
  */
-int
-do_getdent(int fd, struct dirent *dirp)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_getdent");
-        return -1;
+int do_getdent(int fd, struct dirent *dirp) {
+	/*  NOT_YET_IMPLEMENTED("VFS: do_getdent");
+	 return -1;*/
+	if (fd == -1) { /* file obviously not open, -1 is not allowed for lseek unlike write*/
+		/*need to find which test executes this code path*/
+		return -EBADF;
+	};
+	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
+	if (file == NULL) { /* file descriptor not valid*/
+		/*need to find which test executes this code path*/
+		return -EBADF; /*or should we return -EBADF?*/
+	};
+	if (!S_ISDIR(file->f_vnode->vn_mode)) { /*file descriptor doesn't refer to directory*/
+		/*need to find which test executes this code path*/
+		fput(file);
+		return -ENOTDIR;
+	};
+	KASSERT(file->f_vnode->vn_ops->readdir != NULL);
+	/*need to find where it is tested*/
+	vnode_t* v = file->f_vnode;
+	int old_offset = file->f_pos;
+	int new_offset = file->f_vnode->vn_ops->readdir(v, old_offset, dirp);
+	file->f_pos = new_offset + old_offset;
+	fput(file);
+	return 0;
+
 }
 
 /*
@@ -319,11 +316,49 @@ do_getdent(int fd, struct dirent *dirp)
  *        whence is not one of SEEK_SET, SEEK_CUR, SEEK_END; or the resulting
  *        file offset would be negative.
  */
-int
-do_lseek(int fd, int offset, int whence)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_lseek");
-        return -1;
+int do_lseek(int fd, int offset, int whence) {
+	/*  NOT_YET_IMPLEMENTED("VFS: do_lseek");
+	 return -1;*/
+	if (fd == -1) { /* file obviously not open, -1 is not allowed for lseek unlike write*/
+		/*need to find which test executes this code path*/
+		return -EBADF;
+	}
+	if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) {
+		/*need to find which test executes this code path*/
+		return EINVAL; /* or -EINVAL?*/
+	};
+	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
+	if (file == NULL) {
+		/*need to find which test executes this code path*/
+		return -EBADF; /*or should we return -EBADF?*/
+	};
+	int file_len = file->f_vnode->vn_len; /*get the file length*/
+	off_t old_offset = file->f_pos; /* get old file offset*/
+	/*calculate new offset:*/
+	int new_offset;
+	switch (whence) {
+	case SEEK_CUR:
+		/*need to find which test executes this code path*/
+		new_offset = old_offset + offset;
+		break;
+	case SEEK_END:
+		/*need to find which test executes this code path*/
+		new_offset = file_len + offset;
+		break;
+	case SEEK_SET:
+		/*need to find which test executes this code path*/
+		new_offset = offset;
+		break;
+	};
+	if (new_offset < 0) { /*offset can actually be larger than file length, but can't be negative*/
+		/*need to find which test executes this code path*/
+		fput(file);
+		return -EINVAL; /* or -EINVAL?*/
+	};
+	/*need to find which test executes this code path*/
+	file->f_pos = new_offset;
+	fput(file);
+	return new_offset;
 }
 
 /*
@@ -337,11 +372,43 @@ do_lseek(int fd, int offset, int whence)
  *      o ENAMETOOLONG
  *        A component of path was too long.
  */
-int
-do_stat(const char *path, struct stat *buf)
-{
-        NOT_YET_IMPLEMENTED("VFS: do_stat");
-        return -1;
+int do_stat(const char *path, struct stat *buf) {
+	/*NOT_YET_IMPLEMENTED("VFS: do_stat");
+	 return -1;*/
+	vnode_t ** node;
+	if (strlen(path) == 0) { /*specified path doesn't exist*/
+		/*need to find a test*/
+		return -ENOENT;
+	}
+	if (path[0] == '/') { /*set the base dir to root file system dir*/
+		/*get root vnode_t*/
+		/*test*/
+		vnode_t* root = curproc->p_cwd->vn_fs->fs_root;
+		vref(root);
+		int rst = lookup(root, path, strlen(path), node);
+		if(rst ==-ENOENT || rst == -ENOTDIR || rst == -ENAMETOOLONG) {/*this function should be implemented in namev.c*/
+			/*test*/
+			vput(root);
+			return rst;
+		};
+		vput(root);
+	} else {
+		/*test*/
+		vref(curproc->p_cwd);
+		int rst = lookup(curproc->p_cwd, path, strlen(path), node);
+		if(rst==-ENOENT || rst == -ENOTDIR || rst == -ENAMETOOLONG){
+			/*test*/
+			vput(curproc->p_cwd);
+			return rst;
+		};
+		vput(curproc->p_cwd);
+	}
+	vnode_t* vnode = *node; /*need to find it*/
+	KASSERT(vnode->vn_ops->stat);
+	dbg(DBG_PRINT, "(GRADING2A 3.f)\n");
+	int result = vnode->vn_ops->stat(vnode, buf);
+	vput(vnode);
+	return result;
 }
 
 #ifdef __MOUNTING__
@@ -364,8 +431,8 @@ do_stat(const char *path, struct stat *buf)
 int
 do_mount(const char *source, const char *target, const char *type)
 {
-        NOT_YET_IMPLEMENTED("MOUNTING: do_mount");
-        return -EINVAL;
+	NOT_YET_IMPLEMENTED("MOUNTING: do_mount");
+	return -EINVAL;
 }
 
 /*
@@ -380,7 +447,7 @@ do_mount(const char *source, const char *target, const char *type)
 int
 do_umount(const char *target)
 {
-        NOT_YET_IMPLEMENTED("MOUNTING: do_umount");
-        return -EINVAL;
+	NOT_YET_IMPLEMENTED("MOUNTING: do_umount");
+	return -EINVAL;
 }
 #endif
