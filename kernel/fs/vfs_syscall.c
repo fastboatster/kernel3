@@ -54,8 +54,18 @@
 int
 do_read(int fd, void *buf, size_t nbytes)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_read");
-        return -1;
+       /* NOT_YET_IMPLEMENTED("VFS: do_read");
+        return -1;*/
+	file_t *file;
+	file=fget(fd);
+	int bytesread=file->f_vnode->vn_ops->read(file->f_vnode,file->f_pos,buf,nbytes);
+	int old_pos=file->f_pos;
+	if(bytesread==0)
+		file->f_pos=file->f_vnode->vn_len;
+	else
+		file->f_pos=file->f_pos+bytesread;
+	fput(file);
+	return file->f_pos-old_pos;
 }
 
 /* Very similar to do_read.  Check f_mode to be sure the file is writable.  If
@@ -83,8 +93,13 @@ do_write(int fd, const void *buf, size_t nbytes)
 int
 do_close(int fd)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_close");
-        return -1;
+        /*NOT_YET_IMPLEMENTED("VFS: do_close");
+        return -1;*/
+	file_t *old_handle=curproc->p_files[fd];
+	curproc->p_files[fd]=NULL;
+	fput(curproc->p_files[fd]);
+	KASSERT(curproc->p_files[fd]=NULL);
+	return 0;
 }
 
 /* To dup a file:
@@ -106,8 +121,15 @@ do_close(int fd)
 int
 do_dup(int fd)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_dup");
-        return -1;
+        /*NOT_YET_IMPLEMENTED("VFS: do_dup");
+        return -1;*/
+
+	file_t *new_handle=fget(fd);
+	int new_fd=get_empty_fd(curproc);
+	if (new_fd==-EMFILE)
+		fput(new_handle);
+	curproc->p_files[new_fd]=new_handle;
+	return new_fd;
 }
 
 /* Same as do_dup, but insted of using get_empty_fd() to get the new fd,
@@ -122,8 +144,13 @@ do_dup(int fd)
 int
 do_dup2(int ofd, int nfd)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_dup2");
-        return -1;
+        /*NOT_YET_IMPLEMENTED("VFS: do_dup2");
+        return -1;*/
+	KASSERT(ofd!=nfd);
+			if (curproc->p_files[nfd]!=NULL)
+				do_close(nfd);
+			curproc->p_files[nfd]=fget(ofd);
+			return nfd;
 }
 
 /*
@@ -154,8 +181,32 @@ do_dup2(int ofd, int nfd)
 int
 do_mknod(const char *path, int mode, unsigned devid)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_mknod");
-        return -1;
+       /* NOT_YET_IMPLEMENTED("VFS: do_mknod");
+        return -1;*/
+	vnode_t *temp=NULL;
+	size_t temp_len;
+	const char *temp_name;
+	int dir_namev_retval=dir_namev(path,&temp_len,&temp_name,NULL,&temp);
+		if(dir_namev_retval==-ENOTDIR)
+			return -ENOTDIR;
+		else if(dir_namev_retval==-ENOENT)
+			return -ENOENT;
+		else
+		{
+			vnode_t *lookup_result=NULL;
+			int lookup_retval=lookup(temp,temp_name,temp_len,&lookup_result);
+			if(lookup_retval==0)
+				return EEXIST;
+			else if (lookup_retval==-ENOTDIR)
+					return -ENOTDIR;
+			else
+			{
+				KASSERT(NULL != temp->vn_ops->mknod);
+				int mknod_retval=temp->vn_ops->mknod(temp,temp_name,temp_len,mode,devid);
+				return mknod_retval;
+			}
+		}
+
 }
 
 /* Use dir_namev() to find the vnode of the dir we want to make the new
@@ -200,8 +251,28 @@ do_mkdir(const char *path)
 int
 do_rmdir(const char *path)
 {
+/*
         NOT_YET_IMPLEMENTED("VFS: do_rmdir");
         return -1;
+*/
+	vnode_t *temp=NULL;
+		size_t temp_len;
+		const char *temp_name;
+		int dir_namev_retval=dir_namev(path,&temp_len,&temp_name,NULL,&temp);
+			if(dir_namev_retval==-ENOTDIR)
+				return -ENOTDIR;
+			else if(dir_namev_retval==-ENOENT)
+				return -ENOENT;
+			else
+			{
+				if (strcmp(temp_name,"."))
+					return -EINVAL;
+				else if (strcmp(temp_name,".."))
+					return -ENOTEMPTY;
+				KASSERT(NULL != temp->vn_ops->rmdir);
+				int rmdir_retval=temp->vn_ops->rmdir(temp,temp_name,temp_len);
+				return rmdir_retval;
+			}
 }
 
 /*
@@ -220,8 +291,33 @@ do_rmdir(const char *path)
 int
 do_unlink(const char *path)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_unlink");
-        return -1;
+        /*NOT_YET_IMPLEMENTED("VFS: do_unlink");
+        return -1;*/
+	vnode_t *temp=NULL;
+		size_t temp_len;
+		const char *temp_name;
+		int dir_namev_retval=dir_namev(path,&temp_len,&temp_name,NULL,&temp);
+			if(dir_namev_retval==-ENOTDIR)
+				return -ENOTDIR;
+			else if(dir_namev_retval==-ENOENT)
+				return -ENOENT;
+			else
+			{
+				vnode_t *lookup_result=NULL;
+				int lookup_retval=lookup(temp,temp_name,temp_len,&lookup_result);
+				if(NULL!=lookup_retval)
+					return lookup_retval;
+				else
+				{
+					if(!S_ISDIR(lookup_result->vn_mode))
+						{
+						KASSERT(NULL != temp->vn_ops->unlink);
+						temp->vn_ops->unlink(temp,temp_name,temp_len);
+						}
+					else
+						return -EISDIR;
+				}
+			}
 }
 
 /* To link:
