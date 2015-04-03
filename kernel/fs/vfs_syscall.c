@@ -283,17 +283,17 @@ int do_getdent(int fd, struct dirent *dirp) {
 	 return -1;*/
 	if (fd == -1) { /* file obviously not open, -1 is not allowed for lseek unlike write*/
 		/*need to find which test executes this code path*/
-		return EBADF;
+		return -EBADF;
 	};
 	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
 	if (file == NULL) { /* file descriptor not valid*/
 		/*need to find which test executes this code path*/
-		return EBADF; /*or should we return -EBADF?*/
+		return -EBADF; /*or should we return -EBADF?*/
 	};
 	if (!S_ISDIR(file->f_vnode->vn_mode)) { /*file descriptor doesn't refer to directory*/
 		/*need to find which test executes this code path*/
 		fput(file);
-		return ENOTDIR;
+		return -ENOTDIR;
 	};
 	KASSERT(file->f_vnode->vn_ops->readdir != NULL);
 	/*need to find where it is tested*/
@@ -321,7 +321,7 @@ int do_lseek(int fd, int offset, int whence) {
 	 return -1;*/
 	if (fd == -1) { /* file obviously not open, -1 is not allowed for lseek unlike write*/
 		/*need to find which test executes this code path*/
-		return EBADF;
+		return -EBADF;
 	}
 	if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) {
 		/*need to find which test executes this code path*/
@@ -330,7 +330,7 @@ int do_lseek(int fd, int offset, int whence) {
 	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
 	if (file == NULL) {
 		/*need to find which test executes this code path*/
-		return EBADF; /*or should we return -EBADF?*/
+		return -EBADF; /*or should we return -EBADF?*/
 	};
 	int file_len = file->f_vnode->vn_len; /*get the file length*/
 	off_t old_offset = file->f_pos; /* get old file offset*/
@@ -353,7 +353,7 @@ int do_lseek(int fd, int offset, int whence) {
 	if (new_offset < 0) { /*offset can actually be larger than file length, but can't be negative*/
 		/*need to find which test executes this code path*/
 		fput(file);
-		return EINVAL; /* or -EINVAL?*/
+		return -EINVAL; /* or -EINVAL?*/
 	};
 	/*need to find which test executes this code path*/
 	file->f_pos = new_offset;
@@ -378,19 +378,29 @@ int do_stat(const char *path, struct stat *buf) {
 	vnode_t ** node;
 	if (strlen(path) == 0) { /*specified path doesn't exist*/
 		/*need to find a test*/
-		return ENOENT;
+		return -ENOENT;
 	}
 	if (path[0] == '/') { /*set the base dir to root file system dir*/
 		/*get root vnode_t*/
 		/*test*/
 		vnode_t* root = curproc->p_cwd->vn_fs->fs_root;
 		vref(root);
-		lookup(root, path, strlen(path), node); /*this function should be implemented in namev.c*/
+		int rst = lookup(root, path, strlen(path), node);
+		if(rst ==-ENOENT || rst == -ENOTDIR || rst == -ENAMETOOLONG) {/*this function should be implemented in namev.c*/
+			/*test*/
+			vput(root);
+			return rst;
+		};
 		vput(root);
 	} else {
 		/*test*/
 		vref(curproc->p_cwd);
-		lookup(curproc->p_cwd, path, strlen(path), node);
+		int rst = lookup(curproc->p_cwd, path, strlen(path), node);
+		if(rst==-ENOENT || rst == -ENOTDIR || rst == -ENAMETOOLONG){
+			/*test*/
+			vput(curproc->p_cwd);
+			return rst;
+		};
 		vput(curproc->p_cwd);
 	}
 	vnode_t* vnode = *node; /*need to find it*/
