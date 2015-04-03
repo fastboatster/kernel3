@@ -134,7 +134,6 @@ do_open(const char *filename, int oflags)
 		return -EINVAL;
 	}
 
-
 	vnode_t *file_vnode = NULL;
 	int open_resp = open_namev(filename, oflags, &file_vnode, NULL);
 	if(open_resp < 0) {
