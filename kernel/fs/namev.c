@@ -126,7 +126,7 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			pname++;
 		}
 
-		if(NULL == base) {
+		else if(NULL == base) {
 			dbg(DBG_VFS, "INFO: dir_namev(): NULL base, use current directory\n");
 			dir = curproc->p_cwd;
 			vref(dir);
