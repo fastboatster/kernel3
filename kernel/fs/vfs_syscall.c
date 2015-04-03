@@ -305,8 +305,31 @@ do_chdir(const char *path)
 int
 do_getdent(int fd, struct dirent *dirp)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_getdent");
-        return -1;
+      /*  NOT_YET_IMPLEMENTED("VFS: do_getdent");
+        return -1;*/
+	if(fd == -1) { /* file obviously not open, -1 is not allowed for lseek unlike write*/
+			/*need to find which test executes this code path*/
+			return EBADF;
+	};
+	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
+	if(file == NULL) { /* file descriptor not valid*/
+		/*need to find which test executes this code path*/
+		return EBADF; /*or should we return -EBADF?*/
+	};
+	if(!S_ISDIR(file->f_vnode->vn_mode)) { /*file descriptor doesn't refer to directory*/
+		/*need to find which test executes this code path*/
+		fput(file);
+		return ENOTDIR;
+	};
+	KASSERT(file->f_vnode->vn_ops->readdir != NULL);
+	/*need to find where it is tested*/
+	vnode_t* v = file->f_vnode;
+	int old_offset = file->f_pos;
+	int new_offset = file->f_vnode->vn_ops->readdir(v, old_offset, dirp);
+	file->f_pos=new_offset + old_offset;
+	fput(file);
+	return 0;
+
 }
 
 /*
@@ -322,8 +345,48 @@ do_getdent(int fd, struct dirent *dirp)
 int
 do_lseek(int fd, int offset, int whence)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_lseek");
-        return -1;
+      /*  NOT_YET_IMPLEMENTED("VFS: do_lseek");
+        return -1;*/
+	if(fd == -1) { /* file obviously not open, -1 is not allowed for lseek unlike write*/
+		/*need to find which test executes this code path*/
+		return EBADF;
+	}
+	if(whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) {
+		/*need to find which test executes this code path*/
+		return EINVAL; /* or -EINVAL?*/
+	};
+	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
+	if(file == NULL) {
+		/*need to find which test executes this code path*/
+		return EBADF; /*or should we return -EBADF?*/
+	};
+	int file_len = file->f_vnode->vn_len; /*get the file length*/
+	off_t old_offset = file->f_pos; /* get old file offset*/
+	/*calculate new offset:*/
+	int new_offset;
+	switch(whence) {
+	case SEEK_CUR:
+		/*need to find which test executes this code path*/
+		new_offset = old_offset + offset;
+		break;
+	case SEEK_END:
+		/*need to find which test executes this code path*/
+		new_offset = file_len + offset;
+		break;
+	case SEEK_SET:
+		/*need to find which test executes this code path*/
+		new_offset = offset;
+		break;
+	};
+	if(new_offset < 0) { /*offset can actually be larger than file length, but can't be negative*/
+		/*need to find which test executes this code path*/
+		fput(file);
+		return EINVAL; /* or -EINVAL?*/
+	};
+	/*need to find which test executes this code path*/
+	file->f_pos = new_offset;
+	fput(file);
+	return new_offset;
 }
 
 /*
