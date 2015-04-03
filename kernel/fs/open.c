@@ -86,6 +86,28 @@ get_empty_fd(proc_t *p)
 int
 do_open(const char *filename, int oflags)
 {
-        NOT_YET_IMPLEMENTED("VFS: do_open");
-        return -1;
+	/*long if conditional to test the file access flags*/
+	if(oflags!= O_RDONLY && oflags != O_WRONLY && oflags != O_RDWR && oflags != (O_RDONLY|O_CREAT)
+			&& oflags != (O_WRONLY|O_CREAT) && oflags!=(O_RDWR|O_CREAT) && oflags!=(O_RDONLY|O_APPEND)
+			&& oflags!= (O_WRONLY|O_APPEND) && oflags!= (O_RDWR|O_APPEND)) {
+		/*test*/
+		return -EINVAL;
+	}
+	int new_fd = get_empty_fd(curproc);
+	if(new_fd == -EMFILE) {
+		/**/
+		return -EMFILE;
+	}
+	file_t* new_file = fget(new_fd);
+	if(new_file == NULL) {
+		/**/
+		curproc->p_files[new_fd] = NULL;
+		return -ENOMEM;
+	}
+	curproc->p_files[new_fd] = new_file;
+	new_file->f_mode = oflags;
+	fref(new_file);
+
+      /*  NOT_YET_IMPLEMENTED("VFS: do_open");
+        return -1;*/
 }
