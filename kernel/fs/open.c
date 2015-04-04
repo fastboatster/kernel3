@@ -143,11 +143,13 @@ do_open(const char *filename, int oflags)
 
 	if(S_ISDIR(file_vnode->vn_mode) && write_found){
 		fput(new_file);
+		vput(file_vnode);
 		return -EISDIR;
 	}
 
 	if((S_ISCHR(file_vnode->vn_mode) || S_ISBLK(file_vnode->vn_mode)) && NULL == file_vnode->vn_devid){
 		fput(new_file);
+		vput(file_vnode);
 		return -ENXIO;
 	}
 
