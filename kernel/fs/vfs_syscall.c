@@ -56,7 +56,7 @@ int do_read(int fd, void *buf, size_t nbytes) {
      return -1;*/
 	file_t *file = NULL;
 	file = fget(fd);
-	if(NULL == file || (file->f_mode != FMODE_READ || file->f_mode != (FMODE_READ | FMODE_WRITE) || file->f_mode != (FMODE_READ | FMODE_WRITE | FMODE_APPEND))){
+	if(NULL == file || !(file->f_mode & FMODE_READ)){
 		if(file) fput(file);
 		return -EBADF;
 	}

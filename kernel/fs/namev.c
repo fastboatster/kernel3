@@ -119,16 +119,18 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		if(strlen(pathname) > MAXPATHLEN)
 			return -ENAMETOOLONG;
 
+
 		if(pathname[0] == '/') {
 			dbg(DBG_VFS, "INFO: dir_namev(): root path\n");
 			dir = vfs_root_vn;
 			vref(dir);
 			pname++;
-		}
-
-		else if(NULL == base) {
+		} else if(NULL == base) {
 			dbg(DBG_VFS, "INFO: dir_namev(): NULL base, use current directory\n");
 			dir = curproc->p_cwd;
+			vref(dir);
+		} else { /* base not null */
+			dir = base;
 			vref(dir);
 		}
 
@@ -149,13 +151,22 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 				break;
 			}
 
+			dbg(DBG_VFS, "INFO: calling lookup() (%s) (%d)\n", pname, plen);
+
+            if(NULL == dir){
+            	dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. a path element does not exist.\n");
+                return -ENOENT;
+            }
+            if (!S_ISDIR(dir->vn_mode)){
+            	dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. a path element is not a directory.\n");
+                vput(dir);
+                return -ENOTDIR;
+            }
 			if(plen > NAME_LEN){
 				dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. Path component too long.\n");
 				vput(dir);
 				return -ENAMETOOLONG;
 			}
-
-			dbg(DBG_VFS, "INFO: calling lookup() (%s) (%d)\n", pname, plen);
 
 			int lookup_resp = lookup(dir, pname, plen, &result);
 
