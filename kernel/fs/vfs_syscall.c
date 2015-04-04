@@ -166,7 +166,8 @@ int do_dup2(int ofd, int nfd) {
 		return -EBADF;
 	}
 	if(curproc->p_files[nfd] == curproc->p_files[ofd]){
-		if(ofd != nfd) fput(file);
+		/*if(ofd != nfd)*/
+		fput(file);
 		return nfd;
 	}
 
