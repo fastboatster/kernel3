@@ -45,30 +45,27 @@ static slab_allocator_t *proc_allocator = NULL;
 static list_t _proc_list;
 static proc_t *proc_initproc = NULL; /* Pointer to the init process (PID 1) */
 
-void
-proc_init()
-{
-        list_init(&_proc_list);
-        proc_allocator = slab_allocator_create("proc", sizeof(proc_t));
-        KASSERT(proc_allocator != NULL);
+void proc_init() {
+	list_init(&_proc_list);
+	proc_allocator = slab_allocator_create("proc", sizeof(proc_t));
+	KASSERT(proc_allocator != NULL);
 }
 
 proc_t *
-proc_lookup(int pid)
-{
-        proc_t *p;
-        list_iterate_begin(&_proc_list, p, proc_t, p_list_link) {
-                if (p->p_pid == pid) {
-                        return p;
-                }
-        } list_iterate_end();
-        return NULL;
+proc_lookup(int pid) {
+	proc_t *p;
+	list_iterate_begin(&_proc_list, p, proc_t, p_list_link)
+				{
+					if (p->p_pid == pid) {
+						return p;
+					}
+				}list_iterate_end();
+	return NULL;
 }
 
 list_t *
-proc_list()
-{
-        return &_proc_list;
+proc_list() {
+	return &_proc_list;
 }
 
 static pid_t next_pid = 0;
@@ -81,45 +78,44 @@ static pid_t next_pid = 0;
  *
  * @return the next available PID
  */
-static int
-_proc_getid()
-{
-        proc_t *p;
-        pid_t pid = next_pid;
-        while (1) {
-failed:
-                list_iterate_begin(&_proc_list, p, proc_t, p_list_link) {
-                        if (p->p_pid == pid) {
-                                if ((pid = (pid + 1) % PROC_MAX_COUNT) == next_pid) {
-                                        return -1;
-                                } else {
-                                        goto failed;
-                                }
-                        }
-                } list_iterate_end();
-                next_pid = (pid + 1) % PROC_MAX_COUNT;
-                return pid;
-        }
-}
+static int _proc_getid() {
+	proc_t *p;
+	pid_t pid = next_pid;
+	while (1) {
+		failed:
+		list_iterate_begin(&_proc_list, p, proc_t, p_list_link)
+					{
+						if (p->p_pid == pid) {
+							if ((pid = (pid + 1) % PROC_MAX_COUNT)
+									== next_pid) {
+								return -1;
+							} else {
+								goto failed;
+							}
+						}
+					}list_iterate_end();
+					next_pid = (pid + 1) % PROC_MAX_COUNT;
+					return pid;
+				}
+			}
 
-/*
- * The new process, although it isn't really running since it has no
- * threads, should be in the PROC_RUNNING state.
- *
- * Don't forget to set proc_initproc when you create the init
- * process. You will need to be able to reference the init process
- * when reparenting processes to the init process.
- */
+			/*
+			 * The new process, although it isn't really running since it has no
+			 * threads, should be in the PROC_RUNNING state.
+			 *
+			 * Don't forget to set proc_initproc when you create the init
+			 * process. You will need to be able to reference the init process
+			 * when reparenting processes to the init process.
+			 */
 proc_t *
-proc_create(char *name)
-{
+proc_create(char *name) {
 	/* NOT_YET_IMPLEMENTED("PROCS: proc_create");
 	 return NULL;
 	 */
 	dbg(DBG_PRINT, "INFO : executing proc_create \n");
 
 	int pid = _proc_getid();
-	KASSERT(PID_IDLE != pid || list_empty(&_proc_list)); 	/* pid can only be PID_IDLE if this is the first process */
+	KASSERT(PID_IDLE != pid || list_empty(&_proc_list)); /* pid can only be PID_IDLE if this is the first process */
 	dbg(DBG_PRINT, "(GRADING1A 2.a)\n");
 	KASSERT(PID_INIT != pid || PID_IDLE == curproc->p_pid); /* pid can only be PID_INIT when creating from idle process */
 	dbg(DBG_PRINT, "(GRADING1A 2.a)\n");
@@ -132,21 +128,21 @@ proc_create(char *name)
 	new_proc->p_pid = pid;
 	strncpy(new_proc->p_comm, name, PROC_NAME_LEN);
 	new_proc->p_comm[PROC_NAME_LEN - 1] = '\0';
-	list_init(&(new_proc->p_threads)); 	/* initialize list  to track list of threads */
+	list_init(&(new_proc->p_threads)); /* initialize list  to track list of threads */
 	list_init(&(new_proc->p_children)); /* initialize list to track list of children */
 
-	if(PID_IDLE == pid) {
+	if (PID_IDLE == pid) {
 		dbg(DBG_PRINT, "(GRADING1A)\n");
 		new_proc->p_pproc = NULL; /* parent process is the current process that's running */
-	}else {
+	} else {
 		dbg(DBG_PRINT, "(GRADING1A)\n");
 		new_proc->p_pproc = curproc;
 	}
 	new_proc->p_status = NULL;
 	new_proc->p_state = PROC_RUNNING;
-	sched_queue_init(&(new_proc->p_wait)); 		/* initialize wait queue */
+	sched_queue_init(&(new_proc->p_wait)); /* initialize wait queue */
 	/*new_proc->p_wait = NULL;*/
-	new_proc->p_pagedir = pt_create_pagedir(); 	/* create page directory for the process */
+	new_proc->p_pagedir = pt_create_pagedir(); /* create page directory for the process */
 	KASSERT(NULL!=new_proc->p_pagedir);
 	list_link_init(&(new_proc->p_list_link));
 	list_link_init(&(new_proc->p_child_link));
@@ -168,22 +164,21 @@ proc_create(char *name)
 		new_proc->p_files[index] = NULL;
 	}
 	/* set the current working directory */
-	/*new_proc->p_cwd = NULL; 	*/	/* current working directory */
-	if(NULL != curproc) {
+	/*new_proc->p_cwd = NULL; 	*//* current working directory */
+	if (NULL != curproc && new_proc->p_pid != PID_INIT) {
 		new_proc->p_cwd = curproc->p_cwd;
-	} else { /* Idle proc */
-		new_proc->p_cwd = vfs_root_vn;
+	} else { /* Idle proc  and Init proc*/
+		new_proc->p_cwd = NULL;
 	}
-	if(NULL != new_proc->p_cwd)
+	if (NULL != new_proc->p_cwd)
 		vput(new_proc->p_cwd);
-
-
 	/* VM */
-	new_proc->p_brk = NULL; 		/* process break; see brk(2) */
-	new_proc->p_start_brk = NULL; 	/* initial value of process break */
-	new_proc->p_vmmap = NULL; 		/* list of areas mapped into */
+	new_proc->p_brk = NULL; /* process break; see brk(2) */
+	new_proc->p_start_brk = NULL; /* initial value of process break */
+	new_proc->p_vmmap = NULL; /* list of areas mapped into */
 
-	dbg(DBG_PRINT, "INFO : new process created with PID = %d \n", new_proc->p_pid);
+	dbg(DBG_PRINT, "INFO : new process created with PID = %d \n",
+			new_proc->p_pid);
 	return new_proc;
 }
 
@@ -211,9 +206,7 @@ proc_create(char *name)
  *
  * @param status the status to exit the process with
  */
-void
-proc_cleanup(int status)
-{
+void proc_cleanup(int status) {
 	dbg(DBG_PRINT, "INFO : executing proc_cleanup\n");
 	/* This function is called when a thread that exits is the last thread of the process
 	 * for(int i =0 ; i<NFILES; i++)
@@ -232,17 +225,19 @@ proc_cleanup(int status)
 
 	KASSERT(NULL != proc_initproc); /* init process cannot be NULL, we need to reparent child processes */
 	dbg(DBG_PRINT, "(GRADING1A 2.b)\n");
-	KASSERT(NULL != curproc); 	/* when cleanup is called, curproc cannot be NULL*/
+	KASSERT(NULL != curproc); /* when cleanup is called, curproc cannot be NULL*/
 	KASSERT(1 <= curproc->p_pid); /* this process should not be idle process, process cannot be idle process, == KASSERT(PID_IDLE != curproc->p_pid); */
 	dbg(DBG_PRINT, "(GRADING1A 2.b)\n");
 	KASSERT(NULL != curproc->p_pproc); /* this process should have parent process */
 	dbg(DBG_PRINT, "(GRADING1A 2.b)\n");
 
-	dbg(DBG_PRINT, "INFO : reparenting the children's of the current process to INIT, curproc PID = %d, curproc's parent PID = %d\n", curproc->p_pid, curproc->p_pproc->p_pid);
+	dbg(DBG_PRINT,
+			"INFO : reparenting the children's of the current process to INIT, curproc PID = %d, curproc's parent PID = %d\n",
+			curproc->p_pid, curproc->p_pproc->p_pid);
 	/* clean up all open files */
 	int count = 0;
-	for(; count < NFILES; count++) {
-		if(curproc->p_files[count] != NULL){
+	for (; count < NFILES; count++) {
+		if (curproc->p_files[count] != NULL) {
 			do_close(count);
 			curproc->p_files[count] = NULL;
 		}
@@ -251,18 +246,21 @@ proc_cleanup(int status)
 	/* iterate over all the child processes */
 	proc_t *p;
 	list_iterate_begin(&curproc->p_children, p, proc_t, p_child_link)
-	{
-		KASSERT(NULL != p);
-		dbg(DBG_PRINT, "INFO : reparenting child %d to INIT\n", p->p_pid);
-		list_remove(&p->p_child_link); 	/* removes the child from its parent list using next and prev pointers */
-		list_insert_tail(&(proc_initproc->p_children), &(p->p_child_link));
-		p->p_pproc = proc_initproc;
-	}list_iterate_end();
+				{
+					KASSERT(NULL != p);
+					dbg(DBG_PRINT, "INFO : reparenting child %d to INIT\n",
+							p->p_pid);
+					list_remove(&p->p_child_link); /* removes the child from its parent list using next and prev pointers */
+					list_insert_tail(&(proc_initproc->p_children),
+							&(p->p_child_link));
+					p->p_pproc = proc_initproc;
+				}list_iterate_end();
 
-	curproc->p_status = status; 		/* set the status for the current process, this will be returned to the parent when it calls do_waitpid() */
-	curproc->p_state = PROC_DEAD; 		/* mark the process is DEAD */
+	curproc->p_status = status; /* set the status for the current process, this will be returned to the parent when it calls do_waitpid() */
+	curproc->p_state = PROC_DEAD; /* mark the process is DEAD */
 	KASSERT(NULL != &(curproc->p_pproc->p_wait));
-	dbg(DBG_PRINT, "INFO : waking up the parent of the current process in case if it is waiting\n");
+	dbg(DBG_PRINT,
+			"INFO : waking up the parent of the current process in case if it is waiting\n");
 	sched_wakeup_on(&(curproc->p_pproc->p_wait)); /* wake up the parent process it may wait for the child to die */
 
 	KASSERT(NULL != curproc->p_pproc); /* this process should have parent process */
@@ -278,9 +276,7 @@ proc_cleanup(int status)
  *
  * In Weenix, this is only called from proc_kill_all.
  */
-void
-proc_kill(proc_t *p, int status)
-{
+void proc_kill(proc_t *p, int status) {
 	/*
 	 * Cancel all threads, join with them, and exit from the current thread.
 	 * for(int i =0 ; i<NFILES; i++)
@@ -300,68 +296,76 @@ proc_kill(proc_t *p, int status)
 	/* NOT_YET_IMPLEMENTED("PROCS: proc_kill"); */
 
 	dbg(DBG_PRINT, "INFO : executing proc_kill\n");
-	KASSERT(NULL != p); 	/* process should not be NULL */
+	KASSERT(NULL != p); /* process should not be NULL */
 	KASSERT(PID_IDLE != p->p_pid && PID_IDLE != p->p_pproc->p_pid);
 
-	if(curproc == p) {
+	if (curproc == p) {
 		dbg(DBG_PRINT, "(GRADING1C 9)\n");
 		dbg(DBG_PRINT, "INFO : proc_kill is called on the curproc\n");
-		kthread_cancel(curthr, (void*)status);
+		kthread_cancel(curthr, (void*) status);
 		return;
 	}
 
-	dbg(DBG_PRINT, "INFO : reparenting the children's of the given process to INIT, process PID = %d, process's parent PID = %d\n", p->p_pid, p->p_pproc->p_pid);
+	dbg(DBG_PRINT,
+			"INFO : reparenting the children's of the given process to INIT, process PID = %d, process's parent PID = %d\n",
+			p->p_pid, p->p_pproc->p_pid);
 	/* iterate over all the child processes and re-parent them */
 	proc_t* child;
 	list_iterate_begin(&p->p_children, child, proc_t, p_child_link)
-	{
-		KASSERT(NULL != child);
-		dbg(DBG_PRINT, "INFO : reparenting child %d to INIT\n", child->p_pid);
-		list_remove(&child->p_child_link); /* removes the child from its list using its next and prev pointers */
-		list_insert_tail(&(proc_initproc->p_children), &(child->p_child_link));
-		child->p_pproc = proc_initproc;
-	}list_iterate_end();
+				{
+					KASSERT(NULL != child);
+					dbg(DBG_PRINT, "INFO : reparenting child %d to INIT\n",
+							child->p_pid);
+					list_remove(&child->p_child_link); /* removes the child from its list using its next and prev pointers */
+					list_insert_tail(&(proc_initproc->p_children),
+							&(child->p_child_link));
+					child->p_pproc = proc_initproc;
+				}list_iterate_end();
 
-	dbg(DBG_PRINT, "INFO : place cancel request on the process's threads in case required\n");
+	dbg(DBG_PRINT,
+			"INFO : place cancel request on the process's threads in case required\n");
 	/* iterate over threads and cancel them */
 	kthread_t *thr;
 	list_iterate_begin(&p->p_threads, thr, kthread_t, kt_plink)
-	{
-		KASSERT(NULL != thr);
-		if(KT_EXITED != thr->kt_state || KT_NO_STATE != thr->kt_state){ /* thread is in waitQ or runQ */
-			dbg(DBG_PRINT, "(GRADING1C 8)\n");
-			dbg(DBG_PRINT, "INFO : placing the cancel request on process's thread\n");
-			kthread_cancel(thr, (void*)-1); /* cancel the thread */
-		}
-		/* this thread need not be removed from the thread list now. it can be handled in the do_waitpid */
-	}list_iterate_end();
-/* don't know if this path should be tested*/
-}
+				{
+					KASSERT(NULL != thr);
+					if (KT_EXITED != thr->kt_state
+							|| KT_NO_STATE != thr->kt_state) { /* thread is in waitQ or runQ */
+						dbg(DBG_PRINT, "(GRADING1C 8)\n");
+						dbg(DBG_PRINT,
+								"INFO : placing the cancel request on process's thread\n");
+						kthread_cancel(thr, (void*) -1); /* cancel the thread */
+					}
+					/* this thread need not be removed from the thread list now. it can be handled in the do_waitpid */
+				}list_iterate_end();
+				/* don't know if this path should be tested*/
+			}
 
-/*
- * Remember, proc_kill on the current process will _NOT_ return.
- * Don't kill direct children of the idle process.
- *
- * In Weenix, this is only called by sys_halt.
- */
-void
-proc_kill_all()
-{
+			/*
+			 * Remember, proc_kill on the current process will _NOT_ return.
+			 * Don't kill direct children of the idle process.
+			 *
+			 * In Weenix, this is only called by sys_halt.
+			 */
+void proc_kill_all() {
 	/* NOT_YET_IMPLEMENTED("PROCS: proc_kill_all");*/
 	dbg(DBG_PRINT, "INFO : executing proc_kill_all\n");
 	proc_t* child;
 	list_iterate_begin(&_proc_list, child, proc_t, p_list_link)
-	{
-		KASSERT(NULL != child);
-		/* kill all the process except IDLE and direct children of IDLE */
-		if (PROC_DEAD != child->p_state && curproc != child && PID_IDLE != child->p_pid && PID_IDLE != child->p_pproc->p_pid) {
-			dbg(DBG_PRINT, "(GRADING1C 9)\n");
-			dbg(DBG_PRINT, "INFO : kill process %d\n", child->p_pid);
-			proc_kill(child, child->p_status);
-		}
-	}list_iterate_end();
+				{
+					KASSERT(NULL != child);
+					/* kill all the process except IDLE and direct children of IDLE */
+					if (PROC_DEAD != child->p_state && curproc != child
+							&& PID_IDLE != child->p_pid
+							&& PID_IDLE != child->p_pproc->p_pid) {
+						dbg(DBG_PRINT, "(GRADING1C 9)\n");
+						dbg(DBG_PRINT, "INFO : kill process %d\n",
+								child->p_pid);
+						proc_kill(child, child->p_status);
+					}
+				}list_iterate_end();
 
-	if(PID_IDLE != curproc->p_pproc->p_pid) {
+	if (PID_IDLE != curproc->p_pproc->p_pid) {
 		dbg(DBG_PRINT, "(GRADING1C 9)\n");
 		dbg(DBG_PRINT, "INFO : kill the current process %d\n", curproc->p_pid);
 		proc_kill(curproc, curproc->p_status);
@@ -376,9 +380,7 @@ proc_kill_all()
  * run. If you are implementing MTP, a single thread exiting does not
  * necessarily mean that the process should be exited.
  */
-void
-proc_thread_exited(void *retval)
-{
+void proc_thread_exited(void *retval) {
 	/* This will be executed only by the current executing thread
 	 * remove the current thread from current process
 	 * if(isEmpty(curthr->p_threads)) {
@@ -392,7 +394,7 @@ proc_thread_exited(void *retval)
 	dbg(DBG_PRINT, "INFO : executing proc_thread_exited\n");
 	KASSERT(NULL != curproc);
 	/*if (list_empty(&(curproc->p_threads)))*/
-	proc_cleanup((int)retval);
+	proc_cleanup((int) retval);
 	sched_switch();
 }
 
@@ -400,23 +402,24 @@ void proc_cleanup_memory(proc_t* dead_proc) {
 	dbg(DBG_PRINT, "INFO : executing proc_cleanup_memory\n");
 	/* cleanup the thread space of the dead process */
 	kthread_t* thr;
-	list_iterate_begin(&(dead_proc->p_threads), thr, kthread_t, kt_plink) {
-		KASSERT(KT_EXITED == thr->kt_state);
-		dbg(DBG_PRINT, "(GRADING1A 2.c)\n");
-		kthread_destroy(thr);
-	}list_iterate_end();
+	list_iterate_begin(&(dead_proc->p_threads), thr, kthread_t, kt_plink)
+				{
+					KASSERT(KT_EXITED == thr->kt_state);
+					dbg(DBG_PRINT, "(GRADING1A 2.c)\n");
+					kthread_destroy(thr);
+				}list_iterate_end();
 
-	/* clean up process space */
+				/* clean up process space */
 	dbg(DBG_PRINT, "INFO : removing process links\n");
-	if (list_link_is_linked(&dead_proc->p_list_link)){
+	if (list_link_is_linked(&dead_proc->p_list_link)) {
 		dbg(DBG_PRINT, "(GRADING1A)\n");
-		list_remove(&dead_proc->p_list_link); 	/* remove child from the global list */
+		list_remove(&dead_proc->p_list_link); /* remove child from the global list */
 	}
 	if (list_link_is_linked(&dead_proc->p_child_link)) {
 		dbg(DBG_PRINT, "(GRADING1A)\n");
 		list_remove(&dead_proc->p_child_link); /* remove child from parents(curproc) child list */
 	}
-	KASSERT(NULL != dead_proc->p_pagedir);  /* this process should have a valid pagedir */
+	KASSERT(NULL != dead_proc->p_pagedir); /* this process should have a valid pagedir */
 	dbg(DBG_PRINT, "(GRADING1A 2.c)\n");
 	dbg(DBG_PRINT, "INFO : removing page directory\n");
 	pt_destroy_pagedir(dead_proc->p_pagedir); /* destroy the page directory of the process */
@@ -440,9 +443,7 @@ void proc_cleanup_memory(proc_t* dead_proc) {
  * Pids other than -1 and positive numbers are not supported.
  * Options other than 0 are not supported.
  */
-pid_t
-do_waitpid(pid_t pid, int options, int *status)
-{
+pid_t do_waitpid(pid_t pid, int options, int *status) {
 	/* NOT_YET_IMPLEMENTED("PROCS: do_waitpid");
 	 return 0;
 	 */
@@ -454,7 +455,7 @@ do_waitpid(pid_t pid, int options, int *status)
 	if (list_empty(&curproc->p_children)) {
 		dbg(DBG_PRINT, "(GRADING1A)\n");
 		dbg(DBG_PRINT, "INFO : no children found, so returns -ECHILD \n");
-		if(status) {
+		if (status) {
 			dbg(DBG_PRINT, "(GRADING1C 1)\n");
 			*status = -1;
 		}
@@ -468,42 +469,48 @@ do_waitpid(pid_t pid, int options, int *status)
 	proc_t* child;
 	wait_pid: /* label for goto */
 	list_iterate_begin(&curproc->p_children, child, proc_t, p_child_link)
-	{
-		if (-1 == pid) { /* user is not interested in specific pid */
-			dbg(DBG_PRINT, "(GRADING1A)\n");
-			pid_found = 1;
-			if (PROC_DEAD == child->p_state) { /* any of the child process is dead */
-				dbg(DBG_PRINT, "(GRADING1A)\n");
-				found_dead_child = 1;
-				dead_child = child;
-				break; /* once we found the child that's dead */
-			}
-		} else {
-			dbg(DBG_PRINT, "(GRADING1C 1)\n");
-			if (pid == child->p_pid) {
-				dbg(DBG_PRINT, "(GRADING1C 1)\n");
-				pid_found = 1;
-				pid_check: /* label for goto */
-				if (PROC_DEAD == child->p_state) {
-					dbg(DBG_PRINT, "(GRADING1C 1)\n");
-					found_dead_child = 1;
-					dead_child = child;
-					break; /* process is dead (given pid) */
-				} else {
-					dbg(DBG_PRINT, "(GRADING1C 1)\n");
-					dbg(DBG_PRINT, "INFO : process %d is not dead yet. so, the curproc(PID = %d) goes for sleep \n", pid, curproc->p_pid);
-					sched_sleep_on(&curproc->p_wait);
-					dbg(DBG_PRINT, "INFO : process %d woke up \n", curproc->p_pid);
-					goto pid_check; /* if some other thread/process wakes up this process */
-				}
-			}
-		}
-	}list_iterate_end();
+				{
+					if (-1 == pid) { /* user is not interested in specific pid */
+						dbg(DBG_PRINT, "(GRADING1A)\n");
+						pid_found = 1;
+						if (PROC_DEAD == child->p_state) { /* any of the child process is dead */
+							dbg(DBG_PRINT, "(GRADING1A)\n");
+							found_dead_child = 1;
+							dead_child = child;
+							break; /* once we found the child that's dead */
+						}
+					} else {
+						dbg(DBG_PRINT, "(GRADING1C 1)\n");
+						if (pid == child->p_pid) {
+							dbg(DBG_PRINT, "(GRADING1C 1)\n");
+							pid_found = 1;
+							pid_check: /* label for goto */
+							if (PROC_DEAD == child->p_state) {
+								dbg(DBG_PRINT, "(GRADING1C 1)\n");
+								found_dead_child = 1;
+								dead_child = child;
+								break; /* process is dead (given pid) */
+							} else {
+								dbg(DBG_PRINT, "(GRADING1C 1)\n");
+								dbg(DBG_PRINT,
+										"INFO : process %d is not dead yet. so, the curproc(PID = %d) goes for sleep \n",
+										pid, curproc->p_pid);
+								sched_sleep_on(&curproc->p_wait);
+								dbg(DBG_PRINT, "INFO : process %d woke up \n",
+										curproc->p_pid);
+								goto pid_check;
+								/* if some other thread/process wakes up this process */
+							}
+						}
+					}
+				}list_iterate_end();
 
 	if (0 == pid_found) {
 		dbg(DBG_PRINT, "(GRADING1C 1)\n");
-		dbg(DBG_PRINT, "INFO : given pid(%d) is not found in the curproc's child list\n", pid);
-		if(status) {
+		dbg(DBG_PRINT,
+				"INFO : given pid(%d) is not found in the curproc's child list\n",
+				pid);
+		if (status) {
 			dbg(DBG_PRINT, "(GRADING1C 1)\n");
 			*status = -1;
 		}
@@ -511,19 +518,22 @@ do_waitpid(pid_t pid, int options, int *status)
 	}
 	if (0 == found_dead_child) {
 		dbg(DBG_PRINT, "(GRADING1A)\n"); /* Process is fond and it is not dead, wait for it till it dies */
-		dbg(DBG_PRINT, "INFO : none of the child processes of the given process(PID = %d) is not dead yet. so, it goes for sleep\n", curproc->p_pid);
+		dbg(DBG_PRINT,
+				"INFO : none of the child processes of the given process(PID = %d) is not dead yet. so, it goes for sleep\n",
+				curproc->p_pid);
 		sched_sleep_on(&curproc->p_wait);
 		dbg(DBG_PRINT, "INFO : process %d woke up \n", curproc->p_pid);
 		goto wait_pid;
 	} else {
 		dbg(DBG_PRINT, "(GRADING1A)\n"); /* found_dead_child ==  1*/
-		KASSERT(NULL != dead_child);  /* the dead child process should not be NULL */
+		KASSERT(NULL != dead_child); /* the dead child process should not be NULL */
 		dbg(DBG_PRINT, "(GRADING1A 2.c)\n");
 		pid_t dead_child_pid = dead_child->p_pid;
 		KASSERT(-1 == dead_child_pid || dead_child->p_pid == dead_child_pid); /* should be able to find a valid process ID for the process */
-		dbg(DBG_PRINT, "INFO : found dead child %d, parent pid = %d\n", dead_child_pid,curproc->p_pid);
+		dbg(DBG_PRINT, "INFO : found dead child %d, parent pid = %d\n",
+				dead_child_pid, curproc->p_pid);
 		dbg(DBG_PRINT, "(GRADING1A 2.c)\n");
-		if(status) {
+		if (status) {
 			dbg(DBG_PRINT, "(GRADING1A)\n");
 			*status = dead_child->p_status;
 		}
@@ -539,112 +549,109 @@ do_waitpid(pid_t pid, int options, int *status)
  *
  * @param status the exit status of the process
  */
-void
-do_exit(int status)
-{
+void do_exit(int status) {
 	dbg(DBG_PRINT, "INFO : executing do_exit\n");
 	/* NOT_YET_IMPLEMENTED("PROCS: do_exit"); */
 	kthread_exit((void *) status);
 }
 
-size_t
-proc_info(const void *arg, char *buf, size_t osize)
-{
-        const proc_t *p = (proc_t *) arg;
-        size_t size = osize;
-        proc_t *child;
+size_t proc_info(const void *arg, char *buf, size_t osize) {
+	const proc_t *p = (proc_t *) arg;
+	size_t size = osize;
+	proc_t *child;
 
-        KASSERT(NULL != p);
-        KASSERT(NULL != buf);
+	KASSERT(NULL != p);
+	KASSERT(NULL != buf);
 
-        iprintf(&buf, &size, "pid:          %i\n", p->p_pid);
-        iprintf(&buf, &size, "name:         %s\n", p->p_comm);
-        if (NULL != p->p_pproc) {
-                iprintf(&buf, &size, "parent:       %i (%s)\n",
-                        p->p_pproc->p_pid, p->p_pproc->p_comm);
-        } else {
-                iprintf(&buf, &size, "parent:       -\n");
-        }
+	iprintf(&buf, &size, "pid:          %i\n", p->p_pid);
+	iprintf(&buf, &size, "name:         %s\n", p->p_comm);
+	if (NULL != p->p_pproc) {
+		iprintf(&buf, &size, "parent:       %i (%s)\n", p->p_pproc->p_pid,
+				p->p_pproc->p_comm);
+	} else {
+		iprintf(&buf, &size, "parent:       -\n");
+	}
 
 #ifdef __MTP__
-        int count = 0;
-        kthread_t *kthr;
-        list_iterate_begin(&p->p_threads, kthr, kthread_t, kt_plink) {
-                ++count;
-        } list_iterate_end();
-        iprintf(&buf, &size, "thread count: %i\n", count);
+	int count = 0;
+	kthread_t *kthr;
+	list_iterate_begin(&p->p_threads, kthr, kthread_t, kt_plink) {
+		++count;
+	}list_iterate_end();
+	iprintf(&buf, &size, "thread count: %i\n", count);
 #endif
 
-        if (list_empty(&p->p_children)) {
-                iprintf(&buf, &size, "children:     -\n");
-        } else {
-                iprintf(&buf, &size, "children:\n");
-        }
-        list_iterate_begin(&p->p_children, child, proc_t, p_child_link) {
-                iprintf(&buf, &size, "     %i (%s)\n", child->p_pid, child->p_comm);
-        } list_iterate_end();
+	if (list_empty(&p->p_children)) {
+		iprintf(&buf, &size, "children:     -\n");
+	} else {
+		iprintf(&buf, &size, "children:\n");
+	}
+	list_iterate_begin(&p->p_children, child, proc_t, p_child_link)
+				{
+					iprintf(&buf, &size, "     %i (%s)\n", child->p_pid,
+							child->p_comm);
+				}list_iterate_end();
 
-        iprintf(&buf, &size, "status:       %i\n", p->p_status);
-        iprintf(&buf, &size, "state:        %i\n", p->p_state);
+	iprintf(&buf, &size, "status:       %i\n", p->p_status);
+	iprintf(&buf, &size, "state:        %i\n", p->p_state);
 
 #ifdef __VFS__
 #ifdef __GETCWD__
-        if (NULL != p->p_cwd) {
-                char cwd[256];
-                lookup_dirpath(p->p_cwd, cwd, sizeof(cwd));
-                iprintf(&buf, &size, "cwd:          %-s\n", cwd);
-        } else {
-                iprintf(&buf, &size, "cwd:          -\n");
-        }
+	if (NULL != p->p_cwd) {
+		char cwd[256];
+		lookup_dirpath(p->p_cwd, cwd, sizeof(cwd));
+		iprintf(&buf, &size, "cwd:          %-s\n", cwd);
+	} else {
+		iprintf(&buf, &size, "cwd:          -\n");
+	}
 #endif /* __GETCWD__ */
 #endif
 
 #ifdef __VM__
-        iprintf(&buf, &size, "start brk:    0x%p\n", p->p_start_brk);
-        iprintf(&buf, &size, "brk:          0x%p\n", p->p_brk);
+	iprintf(&buf, &size, "start brk:    0x%p\n", p->p_start_brk);
+	iprintf(&buf, &size, "brk:          0x%p\n", p->p_brk);
 #endif
 
-        return size;
+	return size;
 }
 
-size_t
-proc_list_info(const void *arg, char *buf, size_t osize)
-{
-        size_t size = osize;
-        proc_t *p;
+size_t proc_list_info(const void *arg, char *buf, size_t osize) {
+	size_t size = osize;
+	proc_t *p;
 
-        KASSERT(NULL == arg);
-        KASSERT(NULL != buf);
+	KASSERT(NULL == arg);
+	KASSERT(NULL != buf);
 
 #if defined(__VFS__) && defined(__GETCWD__)
-        iprintf(&buf, &size, "%5s %-13s %-18s %-s\n", "PID", "NAME", "PARENT", "CWD");
+	iprintf(&buf, &size, "%5s %-13s %-18s %-s\n", "PID", "NAME", "PARENT", "CWD");
 #else
-        iprintf(&buf, &size, "%5s %-13s %-s\n", "PID", "NAME", "PARENT");
+	iprintf(&buf, &size, "%5s %-13s %-s\n", "PID", "NAME", "PARENT");
 #endif
 
-        list_iterate_begin(&_proc_list, p, proc_t, p_list_link) {
-                char parent[64];
-                if (NULL != p->p_pproc) {
-                        snprintf(parent, sizeof(parent),
-                                 "%3i (%s)", p->p_pproc->p_pid, p->p_pproc->p_comm);
-                } else {
-                        snprintf(parent, sizeof(parent), "  -");
-                }
+	list_iterate_begin(&_proc_list, p, proc_t, p_list_link)
+				{
+					char parent[64];
+					if (NULL != p->p_pproc) {
+						snprintf(parent, sizeof(parent), "%3i (%s)",
+								p->p_pproc->p_pid, p->p_pproc->p_comm);
+					} else {
+						snprintf(parent, sizeof(parent), "  -");
+					}
 
 #if defined(__VFS__) && defined(__GETCWD__)
-                if (NULL != p->p_cwd) {
-                        char cwd[256];
-                        lookup_dirpath(p->p_cwd, cwd, sizeof(cwd));
-                        iprintf(&buf, &size, " %3i  %-13s %-18s %-s\n",
-                                p->p_pid, p->p_comm, parent, cwd);
-                } else {
-                        iprintf(&buf, &size, " %3i  %-13s %-18s -\n",
-                                p->p_pid, p->p_comm, parent);
-                }
+					if (NULL != p->p_cwd) {
+						char cwd[256];
+						lookup_dirpath(p->p_cwd, cwd, sizeof(cwd));
+						iprintf(&buf, &size, " %3i  %-13s %-18s %-s\n",
+								p->p_pid, p->p_comm, parent, cwd);
+					} else {
+						iprintf(&buf, &size, " %3i  %-13s %-18s -\n",
+								p->p_pid, p->p_comm, parent);
+					}
 #else
-                iprintf(&buf, &size, " %3i  %-13s %-s\n",
-                        p->p_pid, p->p_comm, parent);
+					iprintf(&buf, &size, " %3i  %-13s %-s\n", p->p_pid,
+							p->p_comm, parent);
 #endif
-        } list_iterate_end();
-        return size;
+				}list_iterate_end();
+	return size;
 }
