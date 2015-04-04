@@ -235,8 +235,10 @@ idleproc_run(int arg1, void *arg2)
 #ifdef __VFS__
         /* Once you have VFS remember to set the current working directory
          * of the idle and init processes */
-        curproc->p_cwd = vfs_root_vn; /*set curr dir for idleproc to vfs_root*/
-        initthr->kt_proc->p_cwd = vfs_root_vn; /*do the dame for init process*/
+        curproc->p_cwd = vfs_root_vn;
+        vref(vfs_root_vn);/*set curr dir for idleproc to vfs_root*/
+        initthr->kt_proc->p_cwd = vfs_root_vn;
+        vref(vfs_root_vn);/*do the same for init process*/
        /* NOT_YET_IMPLEMENTED("VFS: idleproc_run");*/
 
         /* Here you need to make the null, zero, and tty devices using mknod */
