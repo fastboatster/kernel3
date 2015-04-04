@@ -169,9 +169,9 @@ proc_create(char *name)
 	}
 	/* set the current working directory */
 	/*new_proc->p_cwd = NULL; 	*/	/* current working directory */
-	if(NULL != curproc) {
+	if(NULL != curproc && new_proc->p_pid !=PID_INIT) {
 		new_proc->p_cwd = curproc->p_cwd;
-	} else { /* Idle proc */
+	} else { /* Idle proc and Init proc*/
 		new_proc->p_cwd = NULL;
 	}
 	if(NULL != new_proc->p_cwd)
