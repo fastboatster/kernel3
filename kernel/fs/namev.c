@@ -235,7 +235,6 @@ open_namev(const char *pathname, int flag, vnode_t **res_vnode, vnode_t *base)
         		if(file_creation_res < 0)
         		{
         			dbg(DBG_VFS, "INFO: open_namev(): file creation failed with ret code (%d)\n", file_creation_res);
-        			vput(res_vnode);
         			vput(dir_res_vnode);
         			return file_creation_res;
         		}
