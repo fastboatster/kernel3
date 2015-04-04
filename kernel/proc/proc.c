@@ -169,10 +169,10 @@ proc_create(char *name)
 	}
 	/* set the current working directory */
 	/*new_proc->p_cwd = NULL; 	*/	/* current working directory */
-	if(NULL != curproc) {
+	if(NULL != curproc && new_proc->p_pid !=PID_INIT) {
 		new_proc->p_cwd = curproc->p_cwd;
-	} else { /* Idle proc */
-		new_proc->p_cwd = vfs_root_vn;
+	} else { /* Idle proc and Init proc will be set in kmain */
+		new_proc->p_cwd = NULL;
 	}
 	if(NULL != new_proc->p_cwd)
 		vput(new_proc->p_cwd);
