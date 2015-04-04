@@ -171,7 +171,7 @@ proc_create(char *name)
 	/*new_proc->p_cwd = NULL; 	*/	/* current working directory */
 	if(NULL != curproc && new_proc->p_pid !=PID_INIT) {
 		new_proc->p_cwd = curproc->p_cwd;
-	} else { /* Idle proc and Init proc*/
+	} else { /* Idle proc and Init proc will be set in kmain */
 		new_proc->p_cwd = NULL;
 	}
 	if(NULL != new_proc->p_cwd)
