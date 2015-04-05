@@ -170,17 +170,19 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 				return -ENAMETOOLONG;
 			}
 
-			int lookup_resp = lookup(dir, pname, plen, &result);
+			if(plen>0) { /* empty name */
+				int lookup_resp = lookup(dir, pname, plen, &result);
 
-			if(lookup_resp < 0){
-				dbg(DBG_VFS, "INFO: lookup() failed with ret code (%d)\n", lookup_resp);
+				if(lookup_resp < 0){
+					dbg(DBG_VFS, "INFO: lookup() failed with ret code (%d)\n", lookup_resp);
+					vput(dir);
+					return lookup_resp;
+				}
 				vput(dir);
-				return lookup_resp;
+				KASSERT(NULL != result);
+				dbg(DBG_PRINT, "(GRADING2A 2.b)\n");
+				dir = result;
 			}
-			vput(dir);
-			KASSERT(NULL != result);
-			dbg(DBG_PRINT, "(GRADING2A 2.b)\n");
-			dir = result;
 
 			/*if(1 ==  time_to_break) break;*/
 		}
@@ -191,7 +193,11 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 	    *namelen = plen;
 	    *res_vnode = dir;
 	    *name = (const char*)pname;
-	    dbg(DBG_VFS, "INFO: dir_namev(): call succeeded with ret code(len of comp) (%d).\n", plen);
+	    dbg(DBG_VFS, "INFO: dir_namev(): call succeeded with ret code(len of comp) (%d)(%s).\n", *namelen, *name);
+
+	    KASSERT(NULL!=*res_vnode);
+		KASSERT(NULL != namelen);
+	    KASSERT(NULL != name);
 
 	    return 0; /* success */
 }
