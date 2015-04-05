@@ -206,7 +206,7 @@ int do_dup2(int ofd, int nfd) {
 int do_mknod(const char *path, int mode, unsigned devid) {
     /* NOT_YET_IMPLEMENTED("VFS: do_mknod");
      return -1;*/
-	if(!S_ISCHR(mode) || !S_ISBLK(mode))
+	if(!S_ISCHR(mode) && !S_ISBLK(mode))
 		return -EINVAL;
 
 	vnode_t *dir_vnode = NULL; /* vnode of the parent */
@@ -224,7 +224,7 @@ int do_mknod(const char *path, int mode, unsigned devid) {
 			return -EEXIST;
 		}
 		else {
-			vput(file_vnode);
+			/*vput(file_vnode);*/
 			KASSERT(NULL != dir_vnode->vn_ops->mknod);
 			return dir_vnode->vn_ops->mknod(dir_vnode, filename, filename_len, mode, devid);
 		}
@@ -265,10 +265,14 @@ int do_mkdir(const char *path) {
 			vput(dir_vnode);
 			return -EEXIST;
 		}
-		else {
-			vput(file_vnode);
+		else if(lookup_retval == -ENOENT){
+			/*vput(file_vnode);*/
 			KASSERT(NULL != dir_vnode->vn_ops->mkdir);
+			dbg(DBG_PRINT, "Gonna create file %s\n",filename);
 			return dir_vnode->vn_ops->mkdir(dir_vnode, filename, filename_len);
+		}else {
+			vput(dir_vnode);
+			return lookup_retval;
 		}
 	}
 }
@@ -296,24 +300,36 @@ int do_rmdir(const char *path) {
 	NOT_YET_IMPLEMENTED("VFS: do_rmdir");
 	return -1;
 	*/
+	dbg(DBG_PRINT, "Remove Dir %s\n", path);
 	vnode_t *temp = NULL;
 	size_t temp_len = 0;
 	const char *temp_name;
 	int dir_namev_retval = dir_namev(path, &temp_len, &temp_name, NULL, &temp);
+	dbg(DBG_PRINT, "Dir namev ret value : %d, %s", dir_namev_retval, temp_name);
 	if(dir_namev_retval < 0) {
 		/*vput(temp); vref() not called when it's a failure */
 		return dir_namev_retval; /* ENOENT,ENOTDIR, ENAMETOOLONG */
 	}else {
-		if (strcmp(temp_name,".")) {
+		if (strcmp(temp_name,".") == 0) {
 			vput(temp);
 			return -EINVAL;
 		}
-		else if (strcmp(temp_name,"..")) {
+		else if (strcmp(temp_name,"..") == 0) {
 			vput(temp);
 			return -ENOTEMPTY;
 		}
-		KASSERT(NULL != temp->vn_ops->rmdir);
-		return temp->vn_ops->rmdir(temp, temp_name, temp_len);
+
+		vnode_t *file_vnode = NULL;
+		int lookup_retval = lookup(temp, temp_name, temp_len, &file_vnode);
+		if(lookup_retval == 0){
+			/*vput(file_vnode);*/
+			dbg(DBG_PRINT, "Gonna remove file %s\n",temp_name);
+			KASSERT(NULL != temp->vn_ops->rmdir);
+			return temp->vn_ops->rmdir(temp, temp_name, temp_len);
+		}else {
+			dbg(DBG_PRINT, "Lookup failed:remove dir (%d)\n", lookup_retval);
+			return lookup_retval;
+		}
 	}
 }
 
@@ -588,38 +604,36 @@ int do_stat(const char *path, struct stat *buf) {
 	/*NOT_YET_IMPLEMENTED("VFS: do_stat");
 	 return -1;*/
 	vnode_t *node = NULL;
+	dbg(DBG_PRINT, "Do_stat %s\n", path);
 	if (strlen(path) == 0) { /*specified path doesn't exist*/
 		/*need to find a test*/
-		return -ENOENT;
+		return -EINVAL;
 	}
-	if (path[0] == '/') { /*set the base dir to root file system dir*/
-		/*get root vnode_t*/
-		/*test*/
-		vnode_t* root = curproc->p_cwd->vn_fs->fs_root;
-		vref(root);
-		int rst = lookup(root, path, strlen(path),&node);
-		if(rst < 0) {/*this function should be implemented in namev.c*/
-			/*test*/
-			vput(root);
-			return rst;
-		};
-		vput(root);
-	} else {
-		/*test*/
-		vref(curproc->p_cwd);
-		int rst = lookup(curproc->p_cwd, path, strlen(path), &node);
-		if(rst < 0){
-			/*test*/
-			vput(curproc->p_cwd);
-			return rst;
-		};
-		vput(curproc->p_cwd);
+
+	vnode_t* dir_vnode = NULL;
+	vnode_t *file_vnode = dir_vnode;
+	int stat_file = 0;
+	size_t filename_len = 0;
+	const char *filename = NULL;
+	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
+	if(dir_namev_retval < 0) {
+		return dir_namev_retval;
+	} else if(filename != NULL){ /* ==0*/  /* Looking a stat for the file */
+		dbg(DBG_PRINT, "Exectuing the file case of stat %s\n", filename);
+		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
+		if(lookup_retval < 0) {
+			vput(dir_vnode);
+			return lookup_retval;
+		}
+		stat_file = 1;
 	}
-	vnode_t* vnode = node; /*need to find it*/
-	KASSERT(vnode->vn_ops->stat);
+
+
+	KASSERT(file_vnode->vn_ops->stat);
 	dbg(DBG_PRINT, "(GRADING2A 3.f)\n");
-	int result = vnode->vn_ops->stat(vnode, buf);
-	vput(vnode);
+	int result = file_vnode->vn_ops->stat(file_vnode, buf);
+	if(stat_file) vput(file_vnode);
+	vput(dir_vnode);
 	return result;
 }
 
