@@ -618,7 +618,7 @@ int do_stat(const char *path, struct stat *buf) {
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
 	if(dir_namev_retval < 0) {
 		return dir_namev_retval;
-	} else if(filename != NULL){ /* ==0 */  /* Looking a stat for the file */
+	} else if(filename != NULL){ /* ==0*/  /* Looking a stat for the file */
 		dbg(DBG_PRINT, "Exectuing the file case of stat %s\n", filename);
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
 		if(lookup_retval < 0) {

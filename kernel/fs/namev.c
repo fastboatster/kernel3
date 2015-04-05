@@ -62,7 +62,7 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 			*result = dir;
 			return 0; /* success */
 		}
-		/* how to get the vnode for the parent directory ??? */
+		/* how to get the vnode for the parent directory ???*/
 
 		int lookup_res = dir->vn_ops->lookup(dir, name, len, result);
 		if(lookup_res < 0) {
