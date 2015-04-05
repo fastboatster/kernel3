@@ -100,15 +100,17 @@ do_open(const char *filename, int oflags)
 	}
 	if(strlen(filename) > NAME_LEN) return -ENAMETOOLONG;
 
-	file_t* new_file = fget(new_fd);
+	file_t* new_file = fget(-1);
 	if(new_file == NULL) {
 		/**/
+		dbg(DBG_VFS, "Null file (%s), (%d)\n", filename,new_fd);
 		return -ENOMEM;
 	}
 	/*set the mode*/
 	/*O_RDONLY, O_WRONLY, O_RDWR, O_RDONLY|O_APPEND,O_WRONLY|O_APPEND,O_RDWR|O_APPEND, O_RDONLY|O_CREAT,O_WRONLY|O_CREAT,O_RDWR|O_CREAT*/
 	int write_found  =0;
-
+	dbg(DBG_PRINT, "Trying to open %s\n", filename);
+	dbg(DBG_PRINT, "Flags (%d)\n",oflags);
 	if(oflags == O_RDONLY || oflags == (O_RDONLY|O_CREAT))
 		new_file->f_mode = FMODE_READ;
 	else if(oflags == O_WRONLY || oflags == (O_WRONLY|O_CREAT)){

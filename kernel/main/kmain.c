@@ -245,9 +245,9 @@ idleproc_run(int arg1, void *arg2)
         /* You can't do this until you have VFS, check the include/drivers/dev.h
          * file for macros with the device ID's you will need to pass to mknod */
         do_mkdir("dev"); /*create a dir for devices*/
-        do_mknod("dev", S_IFCHR, 00); /*null*/
-        do_mknod("dev", S_IFCHR, 20); /*tty0*/
-        do_mknod("dev", S_IFCHR, 01); /*zero*/
+        do_mknod("/dev/null", S_IFCHR, MKDEVID(0, 0)); /*null*/
+        do_mknod("/dev/tty0", S_IFCHR, MKDEVID(2,0)); /*tty0*/
+        do_mknod("/dev/zero", S_IFCHR, MKDEVID(0, 1)); /*zero*/
        /* NOT_YET_IMPLEMENTED("VFS: idleproc_run");*/
 
 #endif

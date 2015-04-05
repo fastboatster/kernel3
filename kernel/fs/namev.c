@@ -47,10 +47,10 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 		KASSERT(NULL != name);
 		dbg(DBG_PRINT, "(GRADING2A 2.a)\n");
 
-		if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode))
+		if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){
 			dbg(DBG_VFS, "INFO: lookup(): not a dir\n");
 			return -ENOTDIR;
-
+		}
 		if(len > NAME_LEN) {
 			dbg(DBG_VFS, "INFO: lookup(): name too long\n");
 			return -ENAMETOOLONG;
@@ -62,11 +62,11 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 			*result = dir;
 			return 0; /* success */
 		}
-		/* how to get the vnode for the parent directory ?? */
+		/* how to get the vnode for the parent directory ???*/
 
 		int lookup_res = dir->vn_ops->lookup(dir, name, len, result);
 		if(lookup_res < 0) {
-			dbg(DBG_VFS, "INFO: lookup(): error in FS lookup\n");
+			dbg(DBG_VFS, "INFO: lookup(): error in FS lookup. Couldn't find the file (%s)\n", name);
 			return lookup_res;
 		}
 
@@ -143,8 +143,10 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			pname = separator;
 			separator = strchr(separator, '/');
 			if(separator!=NULL) {
-				plen = (separator-pathname)-prev_sep_pos-1;
-				prev_sep_pos  = separator-pathname;
+				dbg(DBG_PRINT, "Separator found at : %d", separator-pathname+1);
+				plen = (separator-pathname)-prev_sep_pos;
+				if(pathname[0] == '/') plen--;
+				prev_sep_pos  = separator-pathname+1;
 				separator = separator+1; /* moving ahead of the matched character */
 			}else { /* regular string */
 				plen = strlen(pname);
@@ -181,6 +183,10 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			dir = result;
 
 			/*if(1 ==  time_to_break) break;*/
+		}
+		if(!S_ISDIR(dir->vn_mode)){
+			vput(dir);
+			return -ENOTDIR;
 		}
 	    *namelen = plen;
 	    *res_vnode = dir;
