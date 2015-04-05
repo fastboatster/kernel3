@@ -161,5 +161,5 @@ do_open(const char *filename, int oflags)
 	curproc->p_files[new_fd] = new_file;
 	return new_fd;
       /*  NOT_YET_IMPLEMENTED("VFS: do_open");
-        return -1;*/
+        return -1; */
 }
