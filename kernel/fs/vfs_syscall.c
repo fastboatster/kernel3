@@ -135,10 +135,17 @@ int do_close(int fd) {
 int do_dup(int fd) {
     /*NOT_YET_IMPLEMENTED("VFS: do_dup");
     return -1;*/
+    KASSERT(curproc!=NULL);
+
+    if(fd < 0 || fd >= NFILES || (curproc->p_files[fd] == NULL))
+    {
+    	dbg(DBG_VFS,"INFO: do_dup(): Invalid file descriptor\n");
+        return -EBADF;
+    }
+
 	file_t *new_handle = fget(fd);
-	if(NULL == new_handle){
-		return -EBADF;
-	}
+	KASSERT(NULL != new_handle);
+
 	int new_fd = get_empty_fd(curproc);
 	if (new_fd == -EMFILE) {
 		fput(new_handle);
@@ -160,11 +167,15 @@ int do_dup(int fd) {
 int do_dup2(int ofd, int nfd) {
     /*NOT_YET_IMPLEMENTED("VFS: do_dup2");
     return -1;*/
+    if(ofd < 0||ofd >= NFILES || (curproc->p_files[ofd] == NULL) || nfd < 0 || nfd >= NFILES)
+    {
+    	dbg(DBG_VFS,"INFO: do_dup2(): Invalid file descriptor\n");
+        return -EBADF;
+    }
+
 	file_t *file = fget(ofd);
-	if(NULL == file || nfd < 0 || nfd > NFILES){
-		if(file) fput(file);
-		return -EBADF;
-	}
+	KASSERT(NULL != file);
+
 	if(curproc->p_files[nfd] == curproc->p_files[ofd]){
 		/*if(ofd != nfd)*/
 		fput(file);
@@ -605,21 +616,22 @@ int do_stat(const char *path, struct stat *buf) {
 	 return -1;*/
 	vnode_t *node = NULL;
 	dbg(DBG_PRINT, "Do_stat %s\n", path);
-	if (strlen(path) == 0) { /*specified path doesn't exist*/
+	if ((path && path[0] == '\0') || NULL == buf) { /*specified path doesn't exist*/
 		/*need to find a test*/
 		return -EINVAL;
 	}
 
 	vnode_t* dir_vnode = NULL;
-	vnode_t *file_vnode = dir_vnode;
 	int stat_file = 0;
 	size_t filename_len = 0;
 	const char *filename = NULL;
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
+	vnode_t *file_vnode = dir_vnode;
 	if(dir_namev_retval < 0) {
 		return dir_namev_retval;
-	} else if(filename != NULL){ /* ==0*/  /* Looking a stat for the file */
-		dbg(DBG_PRINT, "Exectuing the file case of stat %s\n", filename);
+	}
+	if(filename_len!=0) { /* ==0*/  /* Looking a stat for the file */
+		dbg(DBG_PRINT, "Exectuing the file case of stat %s, %d\n", filename, filename_len);
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
 		if(lookup_retval < 0) {
 			vput(dir_vnode);
