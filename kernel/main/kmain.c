@@ -237,8 +237,10 @@ idleproc_run(int arg1, void *arg2)
          * of the idle and init processes */
         curproc->p_cwd = vfs_root_vn;
         vref(vfs_root_vn);/*set curr dir for idleproc to vfs_root*/
+        dbg(DBG_PRINT, "After Idel proc");
         initthr->kt_proc->p_cwd = vfs_root_vn;
         vref(vfs_root_vn);/*do the same for init process*/
+        dbg(DBG_PRINT, "After Init proc");
        /* NOT_YET_IMPLEMENTED("VFS: idleproc_run");*/
 
         /* Here you need to make the null, zero, and tty devices using mknod */
@@ -385,6 +387,8 @@ static int vfs_test(kshell_t* kshell, int argc, char** argv){
 	while(do_waitpid(-1, 0, NULL) != -ECHILD);
 	return NULL;
 }
+extern int faber_fs_thread_test(kshell_t *ksh, int argc, char **argv);
+extern int faber_directory_test(kshell_t *ksh, int argc, char **argv);
 static void *
 initproc_run(int arg1, void *arg2)
 {
@@ -397,7 +401,9 @@ initproc_run(int arg1, void *arg2)
 	kshell_add_command("faber_test", my_faber_thread_test, "Run faber_thread_test()");
 	kshell_add_command("sunghan_test", my_sunghan_test, "Run sunghan_test().");
 	kshell_add_command("sunghan_deadlock", my_sunghan_deadlock_test, "Run sunghan_deadlock_test().");
-    kshell_add_command("vfs_test",vfs_test, "Run vfs test");
+    kshell_add_command("vfstest",vfs_test, "Run vfs test");
+    kshell_add_command("faber_fs_thread_test",faber_fs_thread_test, "Run faber fs thread test.");
+    kshell_add_command("faber_directory_test",faber_directory_test, "Run faber directory test.");
 	kshell_t *kshell = kshell_create(0);
     if (NULL == kshell) panic("init: Couldn't create kernel shell\n");
     while (kshell_execute_next(kshell));
