@@ -459,7 +459,7 @@ do_waitpid(pid_t pid, int options, int *status)
 		dbg(DBG_PRINT, "INFO : no children found, so returns -ECHILD \n");
 		if(status) {
 			dbg(DBG_PRINT, "(GRADING1C 1)\n");
-			*status = 0;
+			*status = 0; /*this value is expected in kernl 2*/
 		}
 		return -ECHILD;
 	}
