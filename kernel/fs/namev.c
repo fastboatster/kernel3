@@ -170,7 +170,7 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 				return -ENAMETOOLONG;
 			}
 
-			if(plen>0) { /* empty name */
+			if(plen > 0) { /* empty name */
 				int lookup_resp = lookup(dir, pname, plen, &result);
 
 				if(lookup_resp < 0){
@@ -243,7 +243,7 @@ open_namev(const char *pathname, int flag, vnode_t **res_vnode, vnode_t *base)
         		dbg(DBG_VFS, "INFO: open_namev(): creating the requested file\n");
         		KASSERT(NULL != dir_res_vnode->vn_ops->create);
         		dbg(DBG_PRINT, "(GRADING2A 2.c)\n");
-        		int file_creation_res = (dir_res_vnode->vn_ops->create)(dir_res_vnode, filename, namelen, res_vnode);
+        		int file_creation_res = dir_res_vnode->vn_ops->create(dir_res_vnode, filename, namelen, res_vnode);
         		if(file_creation_res < 0)
         		{
         			dbg(DBG_VFS, "INFO: open_namev(): file creation failed with ret code (%d)\n", file_creation_res);

@@ -175,7 +175,7 @@ proc_create(char *name)
 		new_proc->p_cwd = NULL;
 	}
 	if(NULL != new_proc->p_cwd)
-		vput(new_proc->p_cwd);
+		vref(new_proc->p_cwd);
 
 
 	/* VM */
@@ -247,6 +247,9 @@ proc_cleanup(int status)
 			curproc->p_files[count] = NULL;
 		}
 	}
+
+	if(curproc->p_cwd != NULL)
+		vput(curproc->p_cwd);
 
 	/* iterate over all the child processes */
 	proc_t *p;
