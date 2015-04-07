@@ -47,10 +47,10 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 		KASSERT(NULL != name);
 		dbg(DBG_PRINT, "(GRADING2A 2.a)\n");
 
-		if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){
-			dbg(DBG_VFS, "INFO: lookup(): not a dir\n"); /*this doesn't ever get executed*/
+	/*	if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){
+			dbg(DBG_VFS, "INFO: lookup(): not a dir\n"); this doesn't ever get executed
 			return -ENOTDIR;
-		}
+		}*/
 		if(len > NAME_LEN) {
 			dbg(DBG_VFS, "INFO: lookup(): name too long\n");
 			dbg(DBG_PRINT, "(GRADING2B)\n");
@@ -119,9 +119,9 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		vnode_t *result = NULL;
 		char *pname = (char *)pathname; /* component name */
 
-		if(strlen(pathname) > MAXPATHLEN) {
-			return -ENAMETOOLONG; /*doesn't get executed*/
-		}
+	/*	if(strlen(pathname) > MAXPATHLEN) {
+			return -ENAMETOOLONG; doesn't get executed
+		}*/
 
 		if(pathname[0] == '/') {
 			dbg(DBG_VFS, "INFO: dir_namev(): root path\n");
@@ -134,10 +134,10 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			dir = curproc->p_cwd;
 			dbg(DBG_PRINT, "(GRADING2A)\n");
 			vref(dir);
-		} else { /* base not null */ /*doesn't execute*/
+		} /* else {  base not null doesn't execute
 			dir = base;
 			vref(dir);
-		}
+		}*/
 
 		char *separator = pname;
 
@@ -166,20 +166,20 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 
 			dbg(DBG_VFS, "INFO: calling lookup() (%s) (%d)\n", pname, plen);
 
-            if(NULL == dir){ /*doesn't get executed*/
+        /*    if(NULL == dir){ doesn't get executed
             	dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. a path element does not exist.\n");
                 return -ENOENT;
-            }
-            if (!S_ISDIR(dir->vn_mode)){ /*doesn't get executed*/
+            }*/
+        /*    if (!S_ISDIR(dir->vn_mode)){ doesn't get executed
             	dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. a path element is not a directory.\n");
                 vput(dir);
                 return -ENOTDIR;
-            }
-			if(plen > NAME_LEN){ /*doesn't get executed*/
+            }*/
+		/*	if(plen > NAME_LEN){ doesn't get executed
 				dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. Path component too long.\n");
 				vput(dir);
 				return -ENAMETOOLONG;
-			}
+			}*/
 
 			if(plen > 0) { /* empty name */
 				int lookup_resp = lookup(dir, pname, plen, &result);
@@ -238,17 +238,16 @@ open_namev(const char *pathname, int flag, vnode_t **res_vnode, vnode_t *base)
         vnode_t *dir_res_vnode = NULL;
         const char *filename = NULL; dbg(DBG_PRINT, "(GRADING2A)\n");
         int dir_namev_resp = dir_namev(pathname, &namelen, &filename, base, &dir_res_vnode);
-        if(dir_namev_resp<0)
-        {
+        if(dir_namev_resp<0) {
         	dbg(DBG_VFS, "INFO: open_namev(): call to dir_namev() failed with ret code (%d).\n", dir_namev_resp);
         	dbg(DBG_PRINT, "(GRADING2B)\n");
         	return dir_namev_resp;
         }
-        if(!S_ISDIR(dir_res_vnode->vn_mode)){
+       /* if(!S_ISDIR(dir_res_vnode->vn_mode)){
         	dbg(DBG_VFS, "INFO: open_namev(): call to dir_namev() doesn't return dir.\n");
-        	vput(dir_res_vnode); /* because dir_namev increments and returns */
-        	return -ENOTDIR;/*doesn't get executed*/
-        }
+        	vput(dir_res_vnode); because dir_namev increments and returns
+        	return -ENOTDIR;doesn't get executed
+        }*/
         /* Look up whether the file exists */
         int file_lookup_res = lookup(dir_res_vnode, filename, namelen, res_vnode);
         if(file_lookup_res < 0) {

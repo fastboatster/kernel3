@@ -95,10 +95,10 @@ do_open(const char *filename, int oflags)
 	}*/
 	dbg(DBG_PRINT, "(GRADING2A)\n");
 	int new_fd = get_empty_fd(curproc);
-	if(new_fd == -EMFILE) {
-		/* not tested in regular vfs test*/
+	/* if(new_fd == -EMFILE) {
+		not tested in regular vfs test
 		return -EMFILE;
-	}
+	}*/
 	if(strlen(filename) > NAME_LEN) {
 		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -ENAMETOOLONG;
@@ -162,11 +162,11 @@ do_open(const char *filename, int oflags)
 		return -EISDIR;
 	}
 
-	if((S_ISCHR(file_vnode->vn_mode) || S_ISBLK(file_vnode->vn_mode)) && NULL == file_vnode->vn_devid){
+	/*if((S_ISCHR(file_vnode->vn_mode) || S_ISBLK(file_vnode->vn_mode)) && NULL == file_vnode->vn_devid){
 		fput(new_file);
 		vput(file_vnode);
-		return -ENXIO;
-	}
+		return -ENXIO; not ttested
+	}*/
 
 	new_file->f_vnode = file_vnode;
 	new_file->f_pos = 0;
