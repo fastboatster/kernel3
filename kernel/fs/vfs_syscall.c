@@ -55,9 +55,11 @@ int do_read(int fd, void *buf, size_t nbytes) {
     /* NOT_YET_IMPLEMENTED("VFS: do_read");
      return -1;*/
     KASSERT(curproc!=NULL);
+    dbg(DBG_PRINT, "(GRADING2A)\n");
 
     if(fd < 0 || fd >= NFILES || (curproc->p_files[fd] == NULL)) {
     	dbg(DBG_PRINT,"INFO: Invalid file descriptor\n");
+    	dbg(DBG_PRINT, "(GRADING2B)\n");
         return -EBADF;
     }
 
@@ -66,11 +68,13 @@ int do_read(int fd, void *buf, size_t nbytes) {
 
 	if(!(file->f_mode & FMODE_READ)){
 		fput(file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EBADF;
 	}
 
 	if(S_ISDIR(file->f_vnode->vn_mode)) {
 		fput(file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EISDIR;
 	}
 
@@ -92,9 +96,10 @@ int do_write(int fd, const void *buf, size_t nbytes) {
 	/*NOT_YET_IMPLEMENTED("VFS: do_write");
 	return -1;*/
     KASSERT(curproc!=NULL);
-
+    dbg(DBG_PRINT, "(GRADING2A)\n");
     if(fd < 0 || fd >= NFILES || (curproc->p_files[fd] == NULL)) {
     	dbg(DBG_PRINT,"INFO: Invalid file descriptor\n");
+    	dbg(DBG_PRINT, "(GRADING2B)\n");
         return -EBADF;
     }
 
@@ -103,14 +108,16 @@ int do_write(int fd, const void *buf, size_t nbytes) {
 
 	if(!(file->f_mode & FMODE_WRITE)){
 		fput(file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EBADF;
 	}
 	int seek_pos = file->f_pos;
-	if(file->f_mode & FMODE_APPEND)
+	if(file->f_mode & FMODE_APPEND) {
 		seek_pos = do_lseek(fd, 0, SEEK_END);
-
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+	}
 	int byteswrote = file->f_vnode->vn_ops->write(file->f_vnode, seek_pos, buf, nbytes);
-	if(byteswrote <= 0) {
+	if(byteswrote <= 0) {/*doesn't get executed*/
 		fput(file);
 		return byteswrote;
 	}
@@ -133,8 +140,10 @@ int do_close(int fd) {
     /*NOT_YET_IMPLEMENTED("VFS: do_close");
     return -1;*/
 	KASSERT(curproc != NULL);
+	dbg(DBG_PRINT, "(GRADING2B)\n");
 	if(fd < 0 || fd > NFILES || NULL == curproc->p_files[fd]){
 		dbg(DBG_PRINT,"INFO: Invalid file descriptor\n");
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EBADF;
 	}
 
