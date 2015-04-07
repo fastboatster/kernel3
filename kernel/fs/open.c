@@ -96,46 +96,54 @@ do_open(const char *filename, int oflags)
 	dbg(DBG_PRINT, "(GRADING2A)\n");
 	int new_fd = get_empty_fd(curproc);
 	if(new_fd == -EMFILE) {
-		/**/
+		/* not tested in regular vfs test*/
 		return -EMFILE;
 	}
 	if(strlen(filename) > NAME_LEN) {
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -ENAMETOOLONG;
 	}
 
 	file_t* new_file = fget(-1);
-	if(new_file == NULL) {
-		/**/
+	KASSERT(file);
+	/*if(new_file == NULL) {
+
 		dbg(DBG_VFS, "Null file (%s), (%d)\n", filename,new_fd);
-		return -ENOMEM;
-	}
+	}*/
 	/*set the mode*/
 	/*O_RDONLY, O_WRONLY, O_RDWR, O_RDONLY|O_APPEND,O_WRONLY|O_APPEND,O_RDWR|O_APPEND, O_RDONLY|O_CREAT,O_WRONLY|O_CREAT,O_RDWR|O_CREAT*/
 	int write_found  =0;
 	dbg(DBG_PRINT, "Trying to open %s\n", filename);
 	dbg(DBG_PRINT, "Flags (%d)\n",oflags);
-	if(oflags == O_RDONLY || oflags == (O_RDONLY|O_CREAT))
-		new_file->f_mode = FMODE_READ;
+	if(oflags == O_RDONLY || oflags == (O_RDONLY|O_CREAT)) {
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+		new_file->f_mode = FMODE_READ; }
 	else if(oflags == O_WRONLY || oflags == (O_WRONLY|O_CREAT)){
 		write_found = 1;
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		new_file->f_mode = FMODE_WRITE;
 	}
 	else if(oflags == O_RDWR || oflags == (O_RDWR|O_CREAT)){
+		dbg(DBG_PRINT, "(GRADING2A)\n");
 		write_found = 1;
 		new_file->f_mode = FMODE_READ | FMODE_WRITE;
 	}
-	else if(oflags == (O_RDONLY|O_APPEND))
+	/*else if(oflags == (O_RDONLY|O_APPEND)) {
+
 		new_file->f_mode = FMODE_READ | FMODE_APPEND;
-	else if(oflags == (O_WRONLY|O_APPEND)){
+	}*/
+	/*else if(oflags == (O_WRONLY|O_APPEND)){
 		write_found = 1;
 		new_file->f_mode = FMODE_WRITE | FMODE_APPEND;
-	}
+	}*/
 	else if(oflags == (O_RDWR|O_APPEND)){
 		write_found = 1;
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		new_file->f_mode = FMODE_READ | FMODE_WRITE | FMODE_APPEND;
 	}
 	else {
 		fput(new_file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EINVAL;
 	}
 
@@ -143,12 +151,14 @@ do_open(const char *filename, int oflags)
 	int open_resp = open_namev(filename, oflags, &file_vnode, NULL);
 	if(open_resp < 0) {
 		fput(new_file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return open_resp;
 	}
 
 	if(S_ISDIR(file_vnode->vn_mode) && write_found){
 		fput(new_file);
 		vput(file_vnode);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EISDIR;
 	}
 
