@@ -619,14 +619,15 @@ int do_lseek(int fd, int offset, int whence) {
 	/*  NOT_YET_IMPLEMENTED("VFS: do_lseek");
 	 return -1;*/
     KASSERT(curproc!=NULL);
-
+    dbg(DBG_PRINT, "(GRADING2B)\n");
     if(fd < 0 || fd >= NFILES || (curproc->p_files[fd] == NULL))
     {
     	dbg(DBG_PRINT,"INFO: Invalid file descriptor\n");
+    	dbg(DBG_PRINT, "(GRADING2B)\n");
         return -EBADF;
     }
 	if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) {
-		/*need to find which test executes this code path*/
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EINVAL; /* or -EINVAL?*/
 	};
 
@@ -641,19 +642,23 @@ int do_lseek(int fd, int offset, int whence) {
 		case SEEK_CUR:
 			/*need to find which test executes this code path*/
 			new_offset = old_offset + offset;
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			break;
 		case SEEK_END:
 			/*need to find which test executes this code path*/
 			new_offset = file_len + offset;
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			break;
 		case SEEK_SET:
 			/*need to find which test executes this code path*/
 			new_offset = offset;
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			break;
 	};
 	if (new_offset < 0) { /*offset can actually be larger than file length, but can't be negative*/
 		/*need to find which test executes this code path*/
 		fput(file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EINVAL; /* or -EINVAL?*/
 	};
 	/*need to find which test executes this code path*/
