@@ -259,10 +259,11 @@ int do_dup2(int ofd, int nfd) {
 int do_mknod(const char *path, int mode, unsigned devid) {
     /* NOT_YET_IMPLEMENTED("VFS: do_mknod");
      return -1;*/
-	if(!S_ISCHR(mode) && !S_ISBLK(mode)){
+	dbg(DBG_PRINT, "(GRADING2A)\n");
+/*	if(!S_ISCHR(mode) && !S_ISBLK(mode)){
 		dbg(DBG_PRINT, "(GRADING2A)\n");
 		return -EINVAL;
-		}
+		}*/
 	vnode_t *dir_vnode = NULL; /* vnode of the parent */
 	size_t filename_len = 0 ;
 	const char *filename;
@@ -270,20 +271,21 @@ int do_mknod(const char *path, int mode, unsigned devid) {
 /*	if(dir_namev_retval < 0) { doesn't get executed
 		return dir_namev_retval; ENOENT, ENOTDIR, ENAMETOOLONG
 	}*/
-	if(!S_ISDIR(dir_vnode->vn_mode)){
+	/*if(!S_ISDIR(dir_vnode->vn_mode)){doesn't exec
 		vput(dir_vnode);
 		return -ENOTDIR;
-	}
+	}*/
 	if(filename_len > 0) {
 		vnode_t *file_vnode = NULL;
-		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);dbg(DBG_PRINT, "(GRADING2A)\n");
+		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
+		dbg(DBG_PRINT, "(GRADING2A)\n");
 		if(lookup_retval == -ENOENT){
 			KASSERT(NULL != dir_vnode->vn_ops->mknod);
 			dbg(DBG_PRINT, "(GRADING2A 3.b)\n");
 			int res = dir_vnode->vn_ops->mknod(dir_vnode, filename, filename_len, mode, devid);
 			vput(dir_vnode); /* not sure of it*/
 			return res;
-		}else {
+		}/*else {doesn't exec
 			if(lookup_retval == 0) {
 				vput(file_vnode);
 				vput(dir_vnode);
@@ -291,7 +293,7 @@ int do_mknod(const char *path, int mode, unsigned devid) {
 			}
 			vput(dir_vnode);
 			return lookup_retval;
-		}
+		}*/
 	}
 	vput(dir_vnode);
 	return 0;
