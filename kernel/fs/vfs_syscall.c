@@ -439,26 +439,30 @@ int do_unlink(const char *path) {
 	/*NOT_YET_IMPLEMENTED("VFS: do_unlink");
 	return -1;*/
 	vnode_t *dir_vnode = NULL;
+	dbg(DBG_PRINT, "(GRADING2B)\n");
 	size_t filename_len = 0;
 	const char *filename;
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
-	if(dir_namev_retval < 0) {
+	if(dir_namev_retval < 0) { /*doesn't execute*/
 		return dir_namev_retval; /* ENOENT,ENOTDIR, ENAMETOOLONG */
 	}
-	if(!S_ISDIR(dir_vnode->vn_mode)) {
+	if(!S_ISDIR(dir_vnode->vn_mode)) {/*doesn't execute*/
 		vput(dir_vnode);
 		return -ENOTDIR;
 	}
 	if(filename_len > 0) {
 		vnode_t *file_vnode = NULL;
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		if(lookup_retval < 0) { /* file not here */
 			vput(dir_vnode);
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			return lookup_retval;
 		}
 		if(S_ISDIR(file_vnode->vn_mode)) {
 			vput(file_vnode);
 			vput(dir_vnode);
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			return -EISDIR;
 		}
 		vput(file_vnode);
