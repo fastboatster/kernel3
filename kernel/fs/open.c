@@ -105,7 +105,7 @@ do_open(const char *filename, int oflags)
 	}
 
 	file_t* new_file = fget(-1);
-	KASSERT(file);
+	KASSERT(new_file);
 	/*if(new_file == NULL) {
 
 		dbg(DBG_VFS, "Null file (%s), (%d)\n", filename,new_fd);
