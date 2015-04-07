@@ -47,12 +47,13 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 		KASSERT(NULL != name);
 		dbg(DBG_PRINT, "(GRADING2A 2.a)\n");
 
-		if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){
-			dbg(DBG_VFS, "INFO: lookup(): not a dir\n");
+	/*	if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){
+			dbg(DBG_VFS, "INFO: lookup(): not a dir\n"); this doesn't ever get executed
 			return -ENOTDIR;
-		}
+		}*/
 		if(len > NAME_LEN) {
 			dbg(DBG_VFS, "INFO: lookup(): name too long\n");
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			return -ENAMETOOLONG;
 		}
 
@@ -60,6 +61,7 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 			dbg(DBG_VFS, "INFO: lookup(): vnode requested for the current directory\n");
 			vref(dir);
 			*result = dir;
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			return 0; /* success */
 		}
 		/* how to get the vnode for the parent directory ???*/
@@ -67,6 +69,7 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 		int lookup_res = dir->vn_ops->lookup(dir, name, len, result);
 		if(lookup_res < 0) {
 			dbg(DBG_VFS, "INFO: lookup(): error in FS lookup. Couldn't find the file (%s)\n", name);
+			dbg(DBG_PRINT, "(GRADING2A)\n");
 			return lookup_res;
 		}
 
@@ -116,23 +119,25 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		vnode_t *result = NULL;
 		char *pname = (char *)pathname; /* component name */
 
-		if(strlen(pathname) > MAXPATHLEN)
-			return -ENAMETOOLONG;
-
+	/*	if(strlen(pathname) > MAXPATHLEN) {
+			return -ENAMETOOLONG; doesn't get executed
+		}*/
 
 		if(pathname[0] == '/') {
 			dbg(DBG_VFS, "INFO: dir_namev(): root path\n");
 			dir = vfs_root_vn;
 			vref(dir);
 			pname++;
+			dbg(DBG_PRINT, "(GRADING2A)\n");
 		} else if(NULL == base) {
 			dbg(DBG_VFS, "INFO: dir_namev(): NULL base, use current directory\n");
 			dir = curproc->p_cwd;
+			dbg(DBG_PRINT, "(GRADING2A)\n");
 			vref(dir);
-		} else { /* base not null */
+		} /* else {  base not null doesn't execute
 			dir = base;
 			vref(dir);
-		}
+		}*/
 
 		char *separator = pname;
 
@@ -142,40 +147,47 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		while (1) {
 			pname = separator;
 			separator = strchr(separator, '/');
+			dbg(DBG_PRINT, "(GRADING2A)\n");
 			if(separator!=NULL) {
 				dbg(DBG_PRINT, "Separator found at : %d", separator-pathname+1);
 				plen = (separator-pathname)-prev_sep_pos;
-				if(pathname[0] == '/') plen--;
+				if(pathname[0] == '/') {
+					dbg(DBG_PRINT, "(GRADING2A)\n");
+					plen--;
+				}
 				prev_sep_pos  = separator-pathname+1;
-				separator = separator+1; /* moving ahead of the matched character */
+				separator = separator+1;
+				dbg(DBG_PRINT, "(GRADING2A)\n");/* moving ahead of the matched character */
 			}else { /* regular string */
 				plen = strlen(pname);
+				dbg(DBG_PRINT, "(GRADING2A)\n");
 				break;
 			}
 
 			dbg(DBG_VFS, "INFO: calling lookup() (%s) (%d)\n", pname, plen);
 
-            if(NULL == dir){
+        /*    if(NULL == dir){ doesn't get executed
             	dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. a path element does not exist.\n");
                 return -ENOENT;
-            }
-            if (!S_ISDIR(dir->vn_mode)){
+            }*/
+        /*    if (!S_ISDIR(dir->vn_mode)){ doesn't get executed
             	dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. a path element is not a directory.\n");
                 vput(dir);
                 return -ENOTDIR;
-            }
-			if(plen > NAME_LEN){
+            }*/
+		/*	if(plen > NAME_LEN){ doesn't get executed
 				dbg(DBG_VFS, "INFO: dir_namev(): lookup failed. Path component too long.\n");
 				vput(dir);
 				return -ENAMETOOLONG;
-			}
+			}*/
 
 			if(plen > 0) { /* empty name */
 				int lookup_resp = lookup(dir, pname, plen, &result);
-
+				dbg(DBG_PRINT, "(GRADING2A)\n");
 				if(lookup_resp < 0){
 					dbg(DBG_VFS, "INFO: lookup() failed with ret code (%d)\n", lookup_resp);
 					vput(dir);
+					dbg(DBG_PRINT, "(GRADING2B)\n");
 					return lookup_resp;
 				}
 				vput(dir);
@@ -188,6 +200,7 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		}
 		if(!S_ISDIR(dir->vn_mode)){
 			vput(dir);
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			return -ENOTDIR;
 		}
 	    *namelen = plen;
@@ -223,18 +236,18 @@ open_namev(const char *pathname, int flag, vnode_t **res_vnode, vnode_t *base)
 		KASSERT(NULL != pathname);
         size_t namelen = 0;
         vnode_t *dir_res_vnode = NULL;
-        const char *filename = NULL;
+        const char *filename = NULL; dbg(DBG_PRINT, "(GRADING2A)\n");
         int dir_namev_resp = dir_namev(pathname, &namelen, &filename, base, &dir_res_vnode);
-        if(dir_namev_resp<0)
-        {
+        if(dir_namev_resp<0) {
         	dbg(DBG_VFS, "INFO: open_namev(): call to dir_namev() failed with ret code (%d).\n", dir_namev_resp);
-            return dir_namev_resp;
+        	dbg(DBG_PRINT, "(GRADING2B)\n");
+        	return dir_namev_resp;
         }
-        if(!S_ISDIR(dir_res_vnode->vn_mode)){
+       /* if(!S_ISDIR(dir_res_vnode->vn_mode)){
         	dbg(DBG_VFS, "INFO: open_namev(): call to dir_namev() doesn't return dir.\n");
-        	vput(dir_res_vnode); /* coz dir_namev increments and returns */
-        	return -ENOTDIR;
-        }
+        	vput(dir_res_vnode); because dir_namev increments and returns
+        	return -ENOTDIR;doesn't get executed
+        }*/
         /* Look up whether the file exists */
         int file_lookup_res = lookup(dir_res_vnode, filename, namelen, res_vnode);
         if(file_lookup_res < 0) {
@@ -248,11 +261,13 @@ open_namev(const char *pathname, int flag, vnode_t **res_vnode, vnode_t *base)
         		{
         			dbg(DBG_VFS, "INFO: open_namev(): file creation failed with ret code (%d)\n", file_creation_res);
         			vput(dir_res_vnode);
+        			dbg(DBG_PRINT, "(GRADING2C 1)\n");
         			return file_creation_res;
         		}
         	}else { /* no request for file create */
 				dbg(DBG_VFS, "INFO: open_namev(): call to lookup() failed.\n");
 				vput(dir_res_vnode);
+				dbg(DBG_PRINT, "(GRADING2B)\n");
 				return file_lookup_res;
         	}
         }
