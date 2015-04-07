@@ -570,11 +570,12 @@ int do_getdent(int fd, struct dirent *dirp) {
 	/*  NOT_YET_IMPLEMENTED("VFS: do_getdent");
 	 return -1;*/
 	KASSERT(curproc != NULL);
-
+	dbg(DBG_PRINT, "(GRADING2B)\n");
     if(fd < 0 || fd >= NFILES || (curproc->p_files[fd] == NULL)) /* file obviously not open, -1 is not allowed for lseek unlike write*/
     {
     	/*need to find which test executes this code path*/
     	dbg(DBG_PRINT,"INFO: Invalid file descriptor\n");
+    	dbg(DBG_PRINT, "(GRADING2B)\n");
         return -EBADF;
     }
 	file_t* file = fget(fd); /*fget increments file reference count if the file with this file descriptor exists*/
@@ -583,6 +584,7 @@ int do_getdent(int fd, struct dirent *dirp) {
 	if (!S_ISDIR(file->f_vnode->vn_mode)) { /*file descriptor doesn't refer to directory*/
 		/*need to find which test executes this code path*/
 		fput(file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -ENOTDIR;
 	};
 	KASSERT(file->f_vnode->vn_ops->readdir != NULL);
@@ -592,6 +594,7 @@ int do_getdent(int fd, struct dirent *dirp) {
 	int new_offset = file->f_vnode->vn_ops->readdir(v, old_offset, dirp);
 	if(new_offset <= 0){
 		fput(file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return new_offset;
 	}
 
