@@ -533,13 +533,15 @@ int do_chdir(const char *path) {
 	NOT_YET_IMPLEMENTED("VFS: do_chdir");
 	return -1;
 	*/
-	vnode_t* file_vnode = NULL;
+	vnode_t* file_vnode = NULL;dbg(DBG_PRINT, "(GRADING2B)\n");
 	int file_vnode_resp = open_namev(path, NULL, &file_vnode, NULL);
 	if(file_vnode_resp < 0){
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return file_vnode_resp;
 	}
 	if(!S_ISDIR(file_vnode->vn_mode)){
 		vput(file_vnode);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -ENOTDIR;
 	}
 
