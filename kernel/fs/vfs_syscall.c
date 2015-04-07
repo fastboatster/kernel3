@@ -682,8 +682,9 @@ int do_stat(const char *path, struct stat *buf) {
 	/*NOT_YET_IMPLEMENTED("VFS: do_stat");
 	 return -1;*/
 	vnode_t *node = NULL;
+	dbg(DBG_PRINT, "(GRADING2B)\n");
 	if ((path && path[0] == '\0') || NULL == buf) { /*specified path doesn't exist*/
-		/*need to find a test*/
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EINVAL;
 	}
 
@@ -693,13 +694,15 @@ int do_stat(const char *path, struct stat *buf) {
 	const char *filename = NULL;
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
 	vnode_t *file_vnode = dir_vnode;
-	if(dir_namev_retval < 0) {
+	if(dir_namev_retval < 0) {/*doesn't get executed*/
 		return dir_namev_retval;
 	}
 	if(filename_len > 0) { /* ==0*/  /* Looking a stat for the file */
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
 		if(lookup_retval < 0) {
 			vput(dir_vnode);
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			return lookup_retval;
 		}
 		stat_file = 1;
@@ -708,7 +711,10 @@ int do_stat(const char *path, struct stat *buf) {
 	KASSERT(file_vnode->vn_ops->stat);
 	dbg(DBG_PRINT, "(GRADING2A 3.f)\n");
 	int result = file_vnode->vn_ops->stat(file_vnode, buf);
-	if(stat_file) vput(file_vnode);
+	if(stat_file) {
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+		vput(file_vnode);
+	}
 	vput(dir_vnode);
 	return result;
 }
