@@ -93,12 +93,15 @@ do_open(const char *filename, int oflags)
 
 		return -EINVAL;
 	}*/
+	dbg(DBG_PRINT, "(GRADING2A)\n");
 	int new_fd = get_empty_fd(curproc);
 	if(new_fd == -EMFILE) {
 		/**/
 		return -EMFILE;
 	}
-	if(strlen(filename) > NAME_LEN) return -ENAMETOOLONG;
+	if(strlen(filename) > NAME_LEN) {
+		return -ENAMETOOLONG;
+	}
 
 	file_t* new_file = fget(-1);
 	if(new_file == NULL) {
