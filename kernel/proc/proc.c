@@ -165,18 +165,22 @@ proc_create(char *name)
 	/* VFS-related: */
 	int index = 0;
 	for (index = 0; index < NFILES; index++) {
+		dbg(DBG_PRINT, "(GRADING2A)\n");
 		new_proc->p_files[index] = NULL;
 	}
 	/* set the current working directory */
 	/*new_proc->p_cwd = NULL; 	*/	/* current working directory */
 	if(NULL != curproc && new_proc->p_pid !=PID_INIT) {
 		new_proc->p_cwd = curproc->p_cwd;
+		dbg(DBG_PRINT, "(GRADING2A)\n");
 	} else { /* Idle proc and Init proc will be set in kmain */
 		new_proc->p_cwd = NULL;
+		dbg(DBG_PRINT, "(GRADING2A)\n");
 	}
-	if(NULL != new_proc->p_cwd)
+	if(NULL != new_proc->p_cwd) {
 		vref(new_proc->p_cwd);
-
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+	}
 
 	/* VM */
 	new_proc->p_brk = NULL; 		/* process break; see brk(2) */
@@ -242,15 +246,18 @@ proc_cleanup(int status)
 	/* clean up all open files */
 	int count = 0;
 	for(; count < NFILES; count++) {
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		if(curproc->p_files[count] != NULL){
+			dbg(DBG_PRINT, "(GRADING2B)\n");
 			do_close(count);
 			curproc->p_files[count] = NULL;
 		}
 	}
 
-	if(curproc->p_cwd != NULL)
+	if(curproc->p_cwd != NULL) {
 		vput(curproc->p_cwd);
-
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+	}
 	/* iterate over all the child processes */
 	proc_t *p;
 	list_iterate_begin(&curproc->p_children, p, proc_t, p_child_link)
