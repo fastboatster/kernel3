@@ -121,8 +121,14 @@ end:
 vmmap_t *
 vmmap_create(void)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_create");
-        return NULL;
+      /*  NOT_YET_IMPLEMENTED("VM: vmmap_create");
+        return NULL;*/
+	vmmap_t* map = (vmmap_t*) slab_obj_alloc(vmmap_allocator);
+	/*	list_insert_tail(&(map->vmm_list));*/
+	map->vmm_proc=NULL;
+	(&map->vmm_list)->l_next=NULL;
+	(&map->vmm_list)->l_prev=NULL;
+	return map;
 }
 
 /* Removes all vmareas from the address space and frees the
@@ -130,7 +136,13 @@ vmmap_create(void)
 void
 vmmap_destroy(vmmap_t *map)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_destroy");
+        /*NOT_YET_IMPLEMENTED("VM: vmmap_destroy");*/
+	list_link_t *link;
+	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
+		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
+		list_remove(link);
+		vmarea_free(area);
+	};
 }
 
 /* Add a vmarea to an address space. Assumes (i.e. asserts to some extent)
@@ -140,7 +152,10 @@ vmmap_destroy(vmmap_t *map)
 void
 vmmap_insert(vmmap_t *map, vmarea_t *newvma)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_insert");
+    /*do we need to iterate the list ot find a spot to insert newvma or any place is OK?*/
+	list_insert_tail(&map->vmm_list, &newvma->vma_plink);
+	newvma->vma_vmmap = map;
+	/* NOT_YET_IMPLEMENTED("VM: vmmap_insert");*/
 }
 
 /* Find a contiguous range of free virtual pages of length npages in
@@ -163,7 +178,16 @@ vmmap_find_range(vmmap_t *map, uint32_t npages, int dir)
 vmarea_t *
 vmmap_lookup(vmmap_t *map, uint32_t vfn)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_lookup");
+       /* NOT_YET_IMPLEMENTED("VM: vmmap_lookup");*/
+	list_link_t *link;
+		for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
+			vmarea_t* area = list_item(link, vmarea_t, vma_plink);
+	        uint32_t vma_start = area->vma_start;
+	        uint32_t vma_end = area->vma_end;
+			if(vma_start <= vfn && vfn < vma_end) {
+				return area;
+			}
+		};
         return NULL;
 }
 
