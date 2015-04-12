@@ -125,6 +125,9 @@ vmmap_create(void)
         return NULL;*/
 	vmmap_t* map = (vmmap_t*) slab_obj_alloc(vmmap_allocator);
 	/*	list_insert_tail(&(map->vmm_list));*/
+	map->vmm_proc=NULL;
+	(&map->vmm_list)->l_next=NULL;
+	(&map->vmm_list)->l_prev=NULL;
 	return map;
 }
 
@@ -138,7 +141,7 @@ vmmap_destroy(vmmap_t *map)
 	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
 		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
 		list_remove(link);
-		slab_obj_free(vmarea_allocator, area);
+		vmarea_free(area);
 	};
 }
 
