@@ -244,10 +244,10 @@ idleproc_run(int arg1, void *arg2)
         /* Here you need to make the null, zero, and tty devices using mknod */
         /* You can't do this until you have VFS, check the include/drivers/dev.h
          * file for macros with the device ID's you will need to pass to mknod */
-        do_mkdir("dev"); /*create a dir for devices*/
-        do_mknod("/dev/null", S_IFCHR, MKDEVID(0, 0)); /*null*/
-        do_mknod("/dev/tty0", S_IFCHR, MKDEVID(2,0)); /*tty0*/
-        do_mknod("/dev/zero", S_IFCHR, MKDEVID(0, 1)); /*zero*/
+        KASSERT(0 == do_mkdir("dev")); /*create a dir for devices*/
+        do_mknod("/dev/null", S_IFCHR, MKDEVID(1, 0)); /*null*/
+        do_mknod("/dev/tty0", S_IFCHR, MKDEVID(2, 0)); /*tty0*/
+        do_mknod("/dev/zero", S_IFCHR, MKDEVID(1, 1)); /*zero*/
        /* NOT_YET_IMPLEMENTED("VFS: idleproc_run");*/
 
 #endif
@@ -378,13 +378,15 @@ extern int vfstest_main(int argc, char **argv);
 static int vfs_test(kshell_t* kshell, int argc, char** argv){
 	proc_t *vfs = proc_create("vfs_test");
 	KASSERT(NULL != vfs);
-	kthread_t *vfs_thr = kthread_create(vfs,(vfstest_main), 1, NULL);
+	kthread_t *vfs_thr = kthread_create(vfs, (void *)vfstest_main, 1, NULL);
 	KASSERT(NULL != vfs_thr);
 	dbg(DBG_PRINT, "vfs_test process created with pid %d\n", vfs->p_pid);
 	sched_make_runnable(vfs_thr);
 	while(do_waitpid(-1, 0, NULL) != -ECHILD);
 	return NULL;
 }
+extern int faber_fs_thread_test(kshell_t *ksh, int argc, char **argv);
+extern int faber_directory_test(kshell_t *ksh, int argc, char **argv);
 static void *
 initproc_run(int arg1, void *arg2)
 {
@@ -397,7 +399,9 @@ initproc_run(int arg1, void *arg2)
 	kshell_add_command("faber_test", my_faber_thread_test, "Run faber_thread_test()");
 	kshell_add_command("sunghan_test", my_sunghan_test, "Run sunghan_test().");
 	kshell_add_command("sunghan_deadlock", my_sunghan_deadlock_test, "Run sunghan_deadlock_test().");
-    kshell_add_command("vfs_test",vfs_test, "Run vfs test");
+    kshell_add_command("vfstest",vfs_test, "Run vfs test");
+    kshell_add_command("fs_thread_test",faber_fs_thread_test, "Run faber fs thread test.");
+    kshell_add_command("directory_test",faber_directory_test, "Run faber directory test.");
 	kshell_t *kshell = kshell_create(0);
     if (NULL == kshell) panic("init: Couldn't create kernel shell\n");
     while (kshell_execute_next(kshell));
