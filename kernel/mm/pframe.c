@@ -350,8 +350,27 @@ pframe_fill(pframe_t *pf)
 int
 pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
 {
-        NOT_YET_IMPLEMENTED("VM: pframe_get");
-        return 0;
+        /*NOT_YET_IMPLEMENTED("VM: pframe_get");
+        return 0;*/
+		result = NULL;
+		pframe_t ppage =NULL;
+        while((ppage = pframe_get_resident(o, pagenum))==NULL){
+       /*if page is not found, allocate or call pageoutd*/
+        	if(pageoutd_needed()){/*if we need pageoutd to run, wake it up*/
+        		pageoutd_wakeup();
+        		sched_sleep_on(alloc_waitq);
+        		break;
+        	} else {/*allocate a new page*/
+        		ppage = pframe_alloc(o, pagenum);
+        		result = &ppage;
+        		return 0;
+        	}
+        };
+       while(pframe_is_busy(ppage)) { /*found but it's busy*/
+    	   sched_sleep_on(ppage->pf_waitq); /* wait for it to become not busy*/
+       }
+       result = &ppage; /*if not busy*/
+       return 0;
 }
 
 /*
