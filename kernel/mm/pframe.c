@@ -362,7 +362,14 @@ pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
         		continue;
         	} else {/*allocate a new page*/
         		ppage = pframe_alloc(o, pagenum);
-        		pframe_fill(ppage);
+        		if(ppage==NULL) {
+        			return -ENOMEM;
+        		}
+        		int ret = pframe_fill(ppage);
+        		if(ret < 0) {
+        			pframe_free(ppage);
+        			return ret;
+        		}
         		*result = ppage;
         		return 0;
         	}
