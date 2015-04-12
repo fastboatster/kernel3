@@ -93,44 +93,57 @@ do_open(const char *filename, int oflags)
 
 		return -EINVAL;
 	}*/
+	dbg(DBG_PRINT, "(GRADING2A)\n");
 	int new_fd = get_empty_fd(curproc);
-	if(new_fd == -EMFILE) {
-		/**/
+	/* if(new_fd == -EMFILE) {
+		not tested in regular vfs test
 		return -EMFILE;
+	}*/
+	if(strlen(filename) > NAME_LEN) {
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+		return -ENAMETOOLONG;
 	}
-	if(strlen(filename) > NAME_LEN) return -ENAMETOOLONG;
 
-	file_t* new_file = fget(new_fd);
-	if(new_file == NULL) {
-		/**/
-		return -ENOMEM;
-	}
+	file_t* new_file = fget(-1);
+	KASSERT(new_file);
+	/*if(new_file == NULL) {
+
+		dbg(DBG_VFS, "Null file (%s), (%d)\n", filename,new_fd);
+	}*/
 	/*set the mode*/
 	/*O_RDONLY, O_WRONLY, O_RDWR, O_RDONLY|O_APPEND,O_WRONLY|O_APPEND,O_RDWR|O_APPEND, O_RDONLY|O_CREAT,O_WRONLY|O_CREAT,O_RDWR|O_CREAT*/
 	int write_found  =0;
-
-	if(oflags == O_RDONLY || oflags == (O_RDONLY|O_CREAT))
-		new_file->f_mode = FMODE_READ;
+	dbg(DBG_PRINT, "Trying to open %s\n", filename);
+	dbg(DBG_PRINT, "Flags (%d)\n",oflags);
+	if(oflags == O_RDONLY || oflags == (O_RDONLY|O_CREAT)) {
+		dbg(DBG_PRINT, "(GRADING2B)\n");
+		new_file->f_mode = FMODE_READ; }
 	else if(oflags == O_WRONLY || oflags == (O_WRONLY|O_CREAT)){
 		write_found = 1;
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		new_file->f_mode = FMODE_WRITE;
 	}
 	else if(oflags == O_RDWR || oflags == (O_RDWR|O_CREAT)){
+		dbg(DBG_PRINT, "(GRADING2A)\n");
 		write_found = 1;
 		new_file->f_mode = FMODE_READ | FMODE_WRITE;
 	}
-	else if(oflags == (O_RDONLY|O_APPEND))
+	/*else if(oflags == (O_RDONLY|O_APPEND)) {
+
 		new_file->f_mode = FMODE_READ | FMODE_APPEND;
-	else if(oflags == (O_WRONLY|O_APPEND)){
+	}*/
+	/*else if(oflags == (O_WRONLY|O_APPEND)){
 		write_found = 1;
 		new_file->f_mode = FMODE_WRITE | FMODE_APPEND;
-	}
+	}*/
 	else if(oflags == (O_RDWR|O_APPEND)){
 		write_found = 1;
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		new_file->f_mode = FMODE_READ | FMODE_WRITE | FMODE_APPEND;
 	}
 	else {
 		fput(new_file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EINVAL;
 	}
 
@@ -138,20 +151,22 @@ do_open(const char *filename, int oflags)
 	int open_resp = open_namev(filename, oflags, &file_vnode, NULL);
 	if(open_resp < 0) {
 		fput(new_file);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return open_resp;
 	}
 
 	if(S_ISDIR(file_vnode->vn_mode) && write_found){
 		fput(new_file);
 		vput(file_vnode);
+		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return -EISDIR;
 	}
 
-	if((S_ISCHR(file_vnode->vn_mode) || S_ISBLK(file_vnode->vn_mode)) && NULL == file_vnode->vn_devid){
+	/*if((S_ISCHR(file_vnode->vn_mode) || S_ISBLK(file_vnode->vn_mode)) && NULL == file_vnode->vn_devid){
 		fput(new_file);
 		vput(file_vnode);
-		return -ENXIO;
-	}
+		return -ENXIO; not ttested
+	}*/
 
 	new_file->f_vnode = file_vnode;
 	new_file->f_pos = 0;

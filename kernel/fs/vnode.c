@@ -463,6 +463,7 @@ special_file_read(vnode_t *file, off_t offset, void *buf, size_t count)
    /* NOT_YET_IMPLEMENTED("VFS: special_file_read");
     * return 0;*/
    KASSERT(file);
+   dbg(DBG_PRINT, "(GRADING2A 1.a)\n");
    KASSERT((S_ISCHR(file->vn_mode) || S_ISBLK(file->vn_mode)));
    dbg(DBG_PRINT, "(GRADING2A 1.a)\n");
    if (S_ISCHR(file->vn_mode)) {
@@ -489,6 +490,7 @@ special_file_write(vnode_t *file, off_t offset, const void *buf, size_t count)
     /*NOT_YET_IMPLEMENTED("VFS: special_file_write");
 	  return 0; */
 	KASSERT(file);
+	dbg(DBG_PRINT, "(GRADING2A 1.b)\n");
 	KASSERT((S_ISCHR(file->vn_mode) || S_ISBLK(file->vn_mode)));
 	dbg(DBG_PRINT, "(GRADING2A 1.b)\n");
 	 if (S_ISCHR(file->vn_mode)) {
