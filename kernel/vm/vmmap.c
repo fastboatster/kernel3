@@ -121,8 +121,11 @@ end:
 vmmap_t *
 vmmap_create(void)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_create");
-        return NULL;
+      /*  NOT_YET_IMPLEMENTED("VM: vmmap_create");
+        return NULL;*/
+	vmmap_t* map = (vmmap_t*) slab_obj_alloc(vmmap_allocator);
+	/*	list_insert_tail(&(map->vmm_list));*/
+	return map;
 }
 
 /* Removes all vmareas from the address space and frees the
@@ -130,7 +133,13 @@ vmmap_create(void)
 void
 vmmap_destroy(vmmap_t *map)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_destroy");
+        /*NOT_YET_IMPLEMENTED("VM: vmmap_destroy");*/
+	list_link_t *link;
+	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
+		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
+		list_remove(link);
+		slab_obj_free(vmarea_allocator, area);
+	};
 }
 
 /* Add a vmarea to an address space. Assumes (i.e. asserts to some extent)
