@@ -61,7 +61,7 @@ init_func(syscall_init);
  * this one.
  *  - copy_from_user() the read_args_t
  *  - page_alloc() a temporary buffer
- *  - call do_readl(), and copy_to_user() the read bytes
+ *  - call do_read(), and copy_to_user() the read bytes
  *  - page_free() your buffer
  *  - return the number of bytes actually read, or if anything goes wrong
  *    set curthr->kt_errno and return -1
