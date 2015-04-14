@@ -69,8 +69,31 @@ init_func(syscall_init);
 static int
 sys_read(read_args_t *arg)
 {
+        /*
         NOT_YET_IMPLEMENTED("VM: sys_read");
         return -1;
+        */
+
+		read_args_t read_args;
+		/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
+		if (copy_from_user(&read_args, arg, sizeof(read_args)) < 0) {
+				curthr->kt_errno = EFAULT;
+				return -1;
+		}
+
+		void *buffer = page_alloc();
+		KASSERT(buffer != NULL);
+		int bytes_read = do_read(read_args.fd, buffer, sizeof(buffer));
+		if(bytes_read > 0) {
+			/* copy_to_user(void *uaddr, const void *kaddr, size_t nbytes) */
+			if(copy_to_user(read_args.buf, buffer, read_args.nbytes) > 0) {
+				page_free(buffer);
+				return bytes_read;
+			}
+		}
+		page_free(buffer);
+		curthr->kt_errno = EFAULT;
+		return -1;
 }
 
 /*
@@ -79,8 +102,24 @@ sys_read(read_args_t *arg)
 static int
 sys_write(write_args_t *arg)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: sys_write");
         return -1;
+    */
+	write_args_t write_args;
+	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
+	if (copy_from_user(&write_args, arg, sizeof(write_args)) < 0) {
+			curthr->kt_errno = EFAULT;
+			return -1;
+	}
+
+	int bytes_wrote = do_write(write_args.fd, write_args.buf, write_args.nbytes);
+	if(bytes_wrote > 0) {
+		return bytes_wrote;
+	}
+	curthr->kt_errno = EFAULT;
+	return -1;
+
 }
 
 /*
