@@ -152,9 +152,21 @@ vmmap_destroy(vmmap_t *map)
 void
 vmmap_insert(vmmap_t *map, vmarea_t *newvma)
 {
-    /*do we need to iterate the list ot find a spot to insert newvma or any place is OK?*/
-	list_insert_tail(&map->vmm_list, &newvma->vma_plink);
-	newvma->vma_vmmap = map;
+
+	uint32_t new_vma_end = newvma->vma_end;
+	uint32_t new_vma_start = newvma->vma_start;
+	/*find the vmarea*/
+	list_link_t *link;
+	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
+		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
+		uint32_t vma_start = area->vma_start;
+		uint32_t vma_end = area->vma_end;
+		if(link->l_next != &(map->vmm_list) && vma_end <= new_vma_start && new_vma_end <= (list_item(link->l_next, vmarea_t, vma_plink))->vma_start) {
+				list_insert_before(link->l_next, &(newvma->vma_plink));
+				newvma->vma_vmmap = map;
+			}
+	};
+
 	/* NOT_YET_IMPLEMENTED("VM: vmmap_insert");*/
 }
 
