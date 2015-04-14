@@ -350,8 +350,35 @@ pframe_fill(pframe_t *pf)
 int
 pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
 {
-        NOT_YET_IMPLEMENTED("VM: pframe_get");
-        return 0;
+        /*NOT_YET_IMPLEMENTED("VM: pframe_get");
+        return 0;*/
+		/*result = NULL;*/
+		pframe_t* ppage =NULL;
+        while((ppage = pframe_get_resident(o, pagenum))==NULL){
+       /*if page is not found, allocate or call pageoutd*/
+        	if(pageoutd_needed()){/*if we need pageoutd to run, wake it up*/
+        		pageoutd_wakeup();
+        		sched_sleep_on(&alloc_waitq);
+        		continue;
+        	} else {/*allocate a new page*/
+        		ppage = pframe_alloc(o, pagenum);
+        		if(ppage==NULL) {
+        			return -ENOMEM;
+        		}
+        		int ret = pframe_fill(ppage);
+        		if(ret < 0) {
+        			pframe_free(ppage);
+        			return ret;
+        		}
+        		*result = ppage;
+        		return 0;
+        	}
+        };
+       while(pframe_is_busy(ppage)) { /*found but it's busy*/
+    	   sched_sleep_on(&(ppage->pf_waitq)); /* wait for it to become not busy*/
+       }
+       *result = ppage; /*if not busy*/
+       return 0;
 }
 
 /*
@@ -370,7 +397,18 @@ pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
 void
 pframe_pin(pframe_t *pf)
 {
-        NOT_YET_IMPLEMENTED("VM: pframe_pin");
+	int pin_count = pf->pf_pincount;
+	if(pin_count > 0) {
+		pf->pf_pincount++;
+		return;
+	};
+	list_remove(&(pf->pf_link));
+	list_insert_tail(&pinned_list, &(pf->pf_link));
+	nallocated--;
+	npinned++;
+	pf->pf_pincount++;
+	return;
+        /*NOT_YET_IMPLEMENTED("VM: pframe_pin");*/
 }
 
 /*
@@ -386,7 +424,16 @@ pframe_pin(pframe_t *pf)
 void
 pframe_unpin(pframe_t *pf)
 {
-        NOT_YET_IMPLEMENTED("VM: pframe_unpin");
+	pf->pf_pincount--;
+    if(pf->pf_pincount == 0) {
+    	list_remove(&(pf->pf_link));
+    	list_insert_tail(&alloc_list, &(pf->pf_link));
+    	npinned--;
+    	nallocated++;
+    	return;
+    }
+    return;
+	/* NOT_YET_IMPLEMENTED("VM: pframe_unpin");*/
 }
 
 /*
