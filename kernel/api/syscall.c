@@ -75,24 +75,23 @@ sys_read(read_args_t *arg)
         */
 
 		read_args_t read_args;
+		int	err;
 		/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
-		if (copy_from_user(&read_args, arg, sizeof(read_args)) < 0) {
-				curthr->kt_errno = EFAULT;
+		if ((err = copy_from_user(&read_args, arg, sizeof(read_args_t))) < 0) {
+				curthr->kt_errno = -err;
 				return -1;
 		}
 
 		void *buffer = page_alloc();
 		KASSERT(buffer != NULL);
-		int bytes_read = do_read(read_args.fd, buffer, sizeof(buffer));
-		if(bytes_read > 0) {
+		int bytes_read = do_read(read_args.fd, buffer, read_args.nbytes);
+		if(bytes_read >= 0) {
 			/* copy_to_user(void *uaddr, const void *kaddr, size_t nbytes) */
-			if(copy_to_user(read_args.buf, buffer, read_args.nbytes) > 0) {
-				page_free(buffer);
+			if(copy_to_user(read_args.buf, buffer, bytes_read) >= 0)
 				return bytes_read;
-			}
 		}
 		page_free(buffer);
-		curthr->kt_errno = EFAULT;
+		curthr->kt_errno = -bytes_read; /* error case */
 		return -1;
 }
 
@@ -107,17 +106,18 @@ sys_write(write_args_t *arg)
         return -1;
     */
 	write_args_t write_args;
+	int err;
 	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
-	if (copy_from_user(&write_args, arg, sizeof(write_args)) < 0) {
-			curthr->kt_errno = EFAULT;
+	if ((err = copy_from_user(&write_args, arg, sizeof(write_args_t))) < 0) {
+			curthr->kt_errno = -err;
 			return -1;
 	}
 
 	int bytes_wrote = do_write(write_args.fd, write_args.buf, write_args.nbytes);
-	if(bytes_wrote > 0) {
+	if(bytes_wrote >= 0) {
 		return bytes_wrote;
 	}
-	curthr->kt_errno = EFAULT;
+	curthr->kt_errno = -bytes_wrote; /* error */
 	return -1;
 
 }
@@ -134,8 +134,33 @@ sys_write(write_args_t *arg)
 static int
 sys_getdents(getdents_args_t *arg)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: sys_getdents");
         return -1;
+     */
+	getdents_args_t getdents_args;
+	int err;
+	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
+	if ((err = copy_from_user(&getdents_args, arg, sizeof(getdents_args_t))) < 0) {
+			curthr->kt_errno = -err;
+			return -1;
+	}
+
+	int count = 0;
+	count = getdents_args.count;
+	while(count > 0) {
+		int do_getdent_retval = do_getdent(getdents_args.fd, getdents_args.dirp);
+		if(do_getdent_retval < 0) {
+			curthr->kt_errno = -do_getdent_retval;
+			return -1;
+		}
+		count--;
+	}
+	/*
+	 * Not sure what the last part of the comment says.
+	 */
+	return 0;
+
 }
 
 #ifdef __MOUNTING__
