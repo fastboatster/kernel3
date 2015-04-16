@@ -63,6 +63,51 @@
  */
 void
 handle_pagefault(uintptr_t vaddr, uint32_t cause)
-{
+{/*
         NOT_YET_IMPLEMENTED("VM: handle_pagefault");
+*/
+	/* Faults to be handled
+	 * #define FAULT_PRESENT  0x01 -->  The fault was caused by a page-level protection violation
+		#define FAULT_WRITE    0x02
+		#define FAULT_USER     0x04 --> fault caused, when the processor was executing in user mode.
+		#define FAULT_RESERVED 0x08
+		#define FAULT_EXEC     0x10
+	 */
+
+
+	 /* get the base address of the page */
+	uint32_t base_addr = ADDR_TO_PN(vaddr); /* Since everything is a 4KB page, we divide the virtual address/4096 to get the actual base address */
+
+	/* get the corresponding vmarea of the current process */
+	vmarea_t *vmarea = vmmap_lookup(curproc->p_vmmap, base_addr);
+	if(vmarea) {
+		if((cause & FAULT_RESERVED) && (vmarea->vma_prot == PROT_NONE)) {
+			proc_kill(curproc, EFAULT);
+			return;
+		}
+		/* fault happened because of exec but it does not have exec permission */
+		else if((cause & FAULT_EXEC) && !(vmarea->vma_prot & PROT_EXEC)) {
+			proc_kill(curproc, EFAULT);
+			return;
+		}
+		else if((cause & FAULT_WRITE) && !(vmarea->vma_prot & PROT_WRITE)) {
+			proc_kill(curproc, EFAULT);
+			return;
+		} else { /* not sure what to do with FAULT_USER/ FAULT_PRESENT */
+			/*pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result) */
+			pframe_t *new_frame = NULL;
+			if(pframe_get(vmarea->vma_obj, PAGE_OFFSET(vaddr), &new_frame) >= 0){
+				uintptr_t paddr = pt_virt_to_phys((uintptr_t)new_frame->pf_addr); /* gives the physical address */
+				if(pt_map(curproc->p_pagedir, vaddr, paddr, PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
+					return;
+				}
+				sched_broadcast_on(&new_frame->pf_waitq); /* this helps the waiting process to wake up */
+			} else {
+				return;
+			}
+		}
+	}
+	/*vmarea is NULL --> no mapping */
+	proc_kill(curproc, EFAULT);
+	return;
 }
