@@ -180,8 +180,54 @@ vmmap_insert(vmmap_t *map, vmarea_t *newvma)
 int
 vmmap_find_range(vmmap_t *map, uint32_t npages, int dir)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_find_range");
-        return -1;
+
+	list_link_t *link;
+	uint32_t num_free = 0; /*number of contiguous free pages*/
+	if(dir == VMMAP_DIR_HILO) {
+	for (link = (&(map->vmm_list))->l_prev; link != &(map->vmm_list); link = link->l_prev) {
+		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
+		uint32_t vfn_start = area->vma_start;
+		int page_num = area->vma_obj->mmo_nrespages;
+		int i =0;
+		pframe_t** pf = NULL;
+		for (i = page_num - 1; i >= 0; i--) {
+			area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
+			if(pframe_is_free(*pf)) {
+				num_free++;
+			} else {
+				num_free = 0;
+			};
+			if (num_free == npages) {
+				return vfn_start + i;
+			}
+		}
+	}
+	};
+
+	if(dir == VMMAP_DIR_LOHI) {
+	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
+		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
+		uint32_t vfn_start = area->vma_start;
+		int page_num = area->vma_obj->mmo_nrespages;
+		int i =0;
+		pframe_t **pf = NULL;
+		for (i = 0; i < page_num; i++) {
+			area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
+			if(pframe_is_free(*pf)) {
+				num_free++;
+			} else {
+				num_free = 0;
+			};
+			if (num_free == npages) {
+				return (vfn_start + i - npages);
+			}
+		}
+	}
+	};
+	return -1;
+
+/*	NOT_YET_IMPLEMENTED("VM: vmmap_find_range");
+        return -1;*/
 }
 
 /* Find the vm_area that vfn lies in. Simply scan the address space
@@ -290,7 +336,24 @@ vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages)
 int
 vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_is_range_empty");
+	vmarea_t *area = vmmap_lookup(map, startvfn);
+	int page_num = area->vma_obj->mmo_nrespages; /*number of pages in vmarea*/
+	int i = startvfn - (area->vma_start);
+	uint32_t num_free = 0;
+
+	pframe_t **pf = NULL;
+	for (; i < page_num; i++) {
+		area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
+		if(pframe_is_free(*pf)) {
+			num_free++;
+		} else {
+			return 0;
+		};
+		if (num_free == npages) {
+			return 1;
+		}
+	};
+	/*NOT_YET_IMPLEMENTED("VM: vmmap_is_range_empty");*/
         return 0;
 }
 
