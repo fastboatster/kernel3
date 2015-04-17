@@ -126,8 +126,9 @@ vmmap_create(void)
 	vmmap_t* map = (vmmap_t*) slab_obj_alloc(vmmap_allocator);
 	/*	list_insert_tail(&(map->vmm_list));*/
 	map->vmm_proc=NULL;
-	(&map->vmm_list)->l_next=NULL;
-	(&map->vmm_list)->l_prev=NULL;
+/*	(&map->vmm_list)->l_next=NULL;
+	(&map->vmm_list)->l_prev=NULL;*/
+	list_init(&(map->vmm_list));
 	return map;
 }
 
@@ -155,7 +156,7 @@ vmmap_insert(vmmap_t *map, vmarea_t *newvma)
 
 	uint32_t new_vma_end = newvma->vma_end;
 	uint32_t new_vma_start = newvma->vma_start;
-	/*find the vmarea*/
+	/*find the spot in the vmareas list*/
 	list_link_t *link;
 	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link = link->l_next) {
 		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
@@ -164,8 +165,12 @@ vmmap_insert(vmmap_t *map, vmarea_t *newvma)
 		if(link->l_next != &(map->vmm_list) && vma_end <= new_vma_start && new_vma_end <= (list_item(link->l_next, vmarea_t, vma_plink))->vma_start) {
 				list_insert_before(link->l_next, &(newvma->vma_plink));
 				newvma->vma_vmmap = map;
-			}
+				return;
+		}
 	};
+	/*if it can't be inserted between any vmareas, append to tail*/
+	list_insert_tail(&(map->vmm_list), &(newvma->vma_plink));
+	newvma->vma_vmmap = map;
 
 	/* NOT_YET_IMPLEMENTED("VM: vmmap_insert");*/
 }
@@ -256,8 +261,24 @@ vmmap_lookup(vmmap_t *map, uint32_t vfn)
 vmmap_t *
 vmmap_clone(vmmap_t *map)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_clone");
-        return NULL;
+    /*NOT_YET_IMPLEMENTED("VM: vmmap_clone");*/
+
+	/*allocate a new vmmap:*/
+	vmmap_t *new_map = vmmap_create(); /*vmarea_alloc();*/
+	if(new_map == NULL) {
+		return NULL; /*couldn't allocate a new map, returning null*/
+	};
+	/*iterate entire list of vmareas of a given memory map, and allocate a new vmarea */
+	list_link_t *link;
+	for (link = &(map->vmm_list); link != &(map->vmm_list); link = link->l_next) {
+		/*allocate a new vmarea and insert it into the list in new vmmap*/
+		vmarea_t *new_area = vmarea_alloc();
+		if(new_area == NULL) {
+			return NULL; /*couldn't allocate a new vmarea, return null, maybe need to do a cleanup here*/
+		};
+		list_insert_tail(&(new_map->vmm_list), &(new_area->vma_plink));
+	}
+   return new_map;
 }
 
 /* Insert a mapping into the map starting at lopage for npages pages.
@@ -340,7 +361,9 @@ vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages)
 	int page_num = area->vma_obj->mmo_nrespages; /*number of pages in vmarea*/
 	int i = startvfn - (area->vma_start);
 	uint32_t num_free = 0;
-
+	if ((uint32_t)page_num < npages) {
+		return 0;
+	}
 	pframe_t **pf = NULL;
 	for (; i < page_num; i++) {
 		area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
@@ -368,8 +391,24 @@ vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages)
 int
 vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_read");
-        return 0;
+    /*    NOT_YET_IMPLEMENTED("VM: vmmap_read");*/
+	/* convert virtual address to vfn*/
+	uint32_t addr = *(uint32_t*)vaddr;
+	uint32_t vfn  = ADDR_TO_PN(addr);
+	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
+	/*look up the page*/
+	struct mmobj *memobj = area->vma_obj;
+	int pagenum = ((addr >> PAGE_SHIFT) << 22) >> 22; /*ugly conversion*/
+	pframe_t* pg_frame = NULL;
+	int result = pframe_get(memobj, pagenum, &pg_frame);
+	if (result < 0) {
+		return result;
+	};
+	void *pf_addr = pg_frame->pf_addr;
+	uint32_t offset = (addr << 20) >> 20; /*get the offset in the physical page*/
+	void * new_addr = (void*)(*(uint32_t*)pf_addr + offset); /*just so gcc doesn't complain*/
+	memcpy(buf, new_addr, count);
+    return 0;
 }
 
 /* Write from 'buf' into the virtual address space of 'map' starting at
