@@ -346,8 +346,64 @@ vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 int
 vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_remove");
-        return -1;
+    /*NOT_YET_IMPLEMENTED("VM: vmmap_remove");*/
+	vmarea_t *area = vmmap_lookup(map, lopage);
+	uint32_t vmarea_start = area->vma_start;
+	uint32_t vmarea_end = area->vma_end;
+	uint32_t lopage_end = lopage+ npages;
+	/*case 2:*/
+	if (vmarea_start < lopage && vmarea_end < lopage_end) {
+		area->vma_end = lopage_end;
+		return 1;
+	}
+	/*case 4*/
+	if (lopage < vmarea_start  && lopage_end > vmarea_end) {
+		list_remove(&area->vma_plink);
+		list_remove(&area->vma_olink);
+		vmarea_free(area);
+		return 1;
+	}
+	/*case 3*/
+	if(lopage < vmarea_start  && lopage_end < vmarea_end) {
+		area->vma_start = lopage_end;
+		uint32_t old_offset = area->vma_off;
+		area->vma_off = old_offset + (lopage_end - vmarea_start);
+		return 1;
+	}
+	/*case 1*/
+	if (vmarea_start < lopage && lopage_end < vmarea_end) {
+		/*allocate 2 new vmareas instead of the old one*/
+		vmarea_t* l_area = vmarea_alloc(); /*area to the left of a removed region*/
+		vmarea_t *r_area = vmarea_alloc(); /*area to the right*/
+		/*copy stuff from original vmarea to l_area*/
+		l_area->vma_start = vmarea_start;
+		l_area->vma_end = lopage;
+		l_area->vma_flags = area->vma_flags;
+		l_area->vma_off = area->vma_off;
+		l_area->vma_obj = area->vma_obj;
+		l_area->vma_prot = area->vma_prot;
+		l_area->vma_vmmap = map;
+		vmmap_insert(map, l_area); /*that takes care of plink, and what do we do with olink*/
+		list_insert_before(&(area->vma_olink), &(l_area->vma_olink));
+		/*do the same for the r_area*/
+		r_area->vma_start = lopage_end;
+		r_area->vma_end = vmarea_end;
+		r_area->vma_flags = area->vma_flags;
+		r_area->vma_off = (area->vma_off)+ (lopage_end - vmarea_start);
+		r_area->vma_obj = area->vma_obj;
+		r_area->vma_prot = area->vma_prot;
+		r_area->vma_vmmap = map;
+		vmmap_insert(map, r_area); /*that takes care of plink, and what do we do with olink*/
+		list_insert_before((&(area->vma_olink))->l_next, &(r_area->vma_olink));
+		/*increment the ref count on mmobj:*/
+		area->vma_obj->mmo_ops->ref(area->vma_obj);
+		/*remove and deallocate the old vmarea*/
+		list_remove(&area->vma_plink);
+		list_remove(&area->vma_olink);
+		vmarea_free(area);
+		return 1;
+	}
+   return -1;
 }
 
 /*
@@ -398,7 +454,7 @@ vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count)
 	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
 	/*look up the page*/
 	struct mmobj *memobj = area->vma_obj;
-	int pagenum = ((addr >> PAGE_SHIFT) << 22) >> 22; /*ugly conversion*/
+	int pagenum = vfn - (area->vma_start) + (area->vma_off); /*pagenum based on the vfn of the vaddr*/
 	pframe_t* pg_frame = NULL;
 	int result = pframe_get(memobj, pagenum, &pg_frame);
 	if (result < 0) {
@@ -422,6 +478,21 @@ vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count)
 int
 vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count)
 {
-        NOT_YET_IMPLEMENTED("VM: vmmap_write");
+       /* NOT_YET_IMPLEMENTED("VM: vmmap_write");*/
+	uint32_t addr = *(uint32_t*)vaddr;
+	uint32_t vfn  = ADDR_TO_PN(addr);
+	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
+	/*look up the page*/
+	struct mmobj *memobj = area->vma_obj;
+	int pagenum = vfn - (area->vma_start) + (area->vma_off); /*pagenum based on the vfn of the vaddr*/
+	pframe_t* pg_frame = NULL;
+	int result = pframe_get(memobj, pagenum, &pg_frame);
+	if (result < 0) {
+		return result;
+	};
+	void *pf_addr = pg_frame->pf_addr;
+	uint32_t offset = (addr << 20) >> 20; /*get the offset in the physical page*/
+		void * new_addr = (void*)(*(uint32_t*)pf_addr + offset); /*just so gcc doesn't complain*/
+		memcpy(new_addr, buf, count);
         return 0;
 }
