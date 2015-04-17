@@ -368,8 +368,25 @@ vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages)
 int
 vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: vmmap_read");
         return 0;
+     */
+
+	/* find the pframe corresponds to the vaddr */
+	vmarea_t *area = vmmap_lookup(map, ADDR_TO_PN(vaddr));
+	if(NULL == area) { /* addr unmapped */
+		return -EFAULT;
+	}
+
+	pframe_t *page = NULL;
+	int pframe_retval = pframe_get(area->vma_obj, (uint32_t)ADDR_TO_PN(vaddr), &page);
+	if(pframe_retval < 0) { /* no page found */
+		return pframe_retval;
+	}
+	/* read the required data */
+	memcpy(buf, page->pf_addr, count); /* it is not gonna work for sure */
+	return 0;
 }
 
 /* Write from 'buf' into the virtual address space of 'map' starting at
@@ -383,6 +400,22 @@ vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count)
 int
 vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: vmmap_write");
         return 0;
+     */
+	/* find the pframe corresponds to the vaddr */
+	vmarea_t *area = vmmap_lookup(map, ADDR_TO_PN(vaddr));
+	if(NULL == area) { /* addr unmapped */
+		return -EFAULT;
+	}
+
+	pframe_t *page = NULL;
+	int pframe_retval = pframe_get(area->vma_obj, (uint32_t)ADDR_TO_PN(vaddr), &page);
+	if(pframe_retval < 0) { /* no page found */
+		return pframe_retval;
+	}
+	/* read the required data */
+	memcpy(page->pf_addr,buf, count); /* it is not gonna work for sure */
+	return 0;
 }
