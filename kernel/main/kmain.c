@@ -385,6 +385,13 @@ static int vfs_test(kshell_t* kshell, int argc, char** argv){
 	while(do_waitpid(-1, 0, NULL) != -ECHILD);
 	return NULL;
 }
+
+static int hello(kshell_t* kshell, int argc, char** argv){
+	char* argvv[] = { NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/hello", argvv, envp);
+}
+
 extern int faber_fs_thread_test(kshell_t *ksh, int argc, char **argv);
 extern int faber_directory_test(kshell_t *ksh, int argc, char **argv);
 static void *
@@ -392,8 +399,17 @@ initproc_run(int arg1, void *arg2)
 {
 	dbg(DBG_PRINT, "INFO : executing initproc_run\n");
 	dbg(DBG_PRINT, "(GRADING1A)\n");
-    /* NOT_YET_IMPLEMENTED("PROCS: initproc_run");*/
+	/*char* argv[] = { NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/hello", argv, envp);*/
+
+	/* NOT_YET_IMPLEMENTED("PROCS: initproc_run");*/
 #ifdef __DRIVERS__
+	/*
+	char* argv[] = { NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/hello", argv, envp); */
+
 	dbg(DBG_PRINT, "(GRADING1B)\n");
 
 	kshell_add_command("faber_test", my_faber_thread_test, "Run faber_thread_test()");
@@ -402,6 +418,7 @@ initproc_run(int arg1, void *arg2)
     kshell_add_command("vfstest",vfs_test, "Run vfs test");
     kshell_add_command("fs_thread_test",faber_fs_thread_test, "Run faber fs thread test.");
     kshell_add_command("directory_test",faber_directory_test, "Run faber directory test.");
+    kshell_add_command("hello",hello, "Run hello program.");
 	kshell_t *kshell = kshell_create(0);
     if (NULL == kshell) panic("init: Couldn't create kernel shell\n");
     while (kshell_execute_next(kshell));
