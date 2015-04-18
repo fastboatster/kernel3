@@ -65,7 +65,11 @@ static mmobj_ops_t shadow_mmobj_ops = {
 void
 shadow_init()
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_init");
+    */
+	shadow_allocator = slab_allocator_create("shadow", sizeof(mmobj_t));
+    KASSERT(shadow_allocator != NULL);
 }
 
 /*
@@ -77,8 +81,17 @@ shadow_init()
 mmobj_t *
 shadow_create()
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_create");
         return NULL;
+    */
+	mmobj_t *new_mmobj = (mmobj_t*)slab_obj_alloc(shadow_allocator);
+	KASSERT(new_mmobj);
+
+	mmobj_init(new_mmobj, new_mmobj->mmo_ops);
+	mmobj_bottom_obj(new_mmobj);
+	shadow_ref(new_mmobj);
+	return new_mmobj;
 }
 
 /* Implementation of mmobj entry points: */
@@ -89,7 +102,12 @@ shadow_create()
 static void
 shadow_ref(mmobj_t *o)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_ref");
+    */
+	KASSERT(o);
+	o->mmo_ops->ref(o);
+	return;
 }
 
 /*
@@ -103,7 +121,23 @@ shadow_ref(mmobj_t *o)
 static void
 shadow_put(mmobj_t *o)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_put");
+    */
+	KASSERT(o);
+	o->mmo_ops->put(o);
+	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
+		pframe_t *page = NULL;
+		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+		    while(pframe_is_busy(page)) { /* if the object is busy wait for it */
+		    	sched_sleep_on(&(page->pf_waitq)); /* wait for it to become not busy*/
+		    }
+			pframe_unpin(page);
+			pframe_free(page); /* uncache all the pages */
+		}list_iterate_end();
+	}
+	slab_obj_free(shadow_allocator, o); /* free the object */
+	return;
 }
 
 /* This function looks up the given page in this shadow object. The
@@ -118,8 +152,26 @@ shadow_put(mmobj_t *o)
 static int
 shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_lookuppage");
         return 0;
+    */
+	KASSERT(o);
+	KASSERT(pf);
+	if(forwrite) { /* copy-on-write */
+		(*pf)->pf_pagenum = pagenum; /* can these 2 pages have the same pagenum ?? */
+		return shadow_fillpage(o, *pf);
+	} else { /* no copy on write */
+		pframe_t* page = NULL;
+		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+			if(page->pf_pagenum == pagenum) {
+				*pf = page;
+				return 0;
+			}
+		}list_iterate_end();
+		/* page not found */
+		return -1;
+	}
 }
 
 /* As per the specification in mmobj.h, fill the page frame starting
@@ -136,8 +188,27 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 static int
 shadow_fillpage(mmobj_t *o, pframe_t *pf)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_fillpage");
         return 0;
+    */
+	KASSERT(o);
+	KASSERT(pf);
+	pframe_t* page = NULL;
+	while(o) {
+		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+			if(page->pf_pagenum == pf->pf_pagenum) {
+			    /* fill the page */
+			    pframe_set_busy(pf);
+			    o->mmo_ops->fillpage(o, pf);
+		        pframe_clear_busy(pf);
+		        sched_broadcast_on(&pf->pf_waitq);
+		        return 0;
+			}
+		}list_iterate_end();
+		o = o->mmo_shadowed;
+	}
+	return -1;
 }
 
 /* These next two functions are not difficult. */
@@ -145,13 +216,45 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 static int
 shadow_dirtypage(mmobj_t *o, pframe_t *pf)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_dirtypage");
         return -1;
+    */
+	KASSERT(o);
+	KASSERT(pf);
+	pframe_t* page = NULL;
+	while(o) {
+		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+			if(page->pf_pagenum == pf->pf_pagenum) {
+			    /* dirty the page */
+				pframe_dirty(pf);
+		        return 0;
+			}
+		}list_iterate_end();
+		o = o->mmo_shadowed;
+	}
+	return -1;
 }
 
 static int
 shadow_cleanpage(mmobj_t *o, pframe_t *pf)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: shadow_cleanpage");
         return -1;
+    */
+	KASSERT(o);
+	KASSERT(pf);
+	pframe_t* page = NULL;
+	while(o) {
+		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+			if(page->pf_pagenum == pf->pf_pagenum) {
+			    /* clean the page */
+				pframe_clean(pf);
+		        return 0;
+			}
+		}list_iterate_end();
+		o = o->mmo_shadowed;
+	}
+	return -1;
 }

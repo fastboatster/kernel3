@@ -69,8 +69,45 @@ init_func(syscall_init);
 static int
 sys_read(read_args_t *arg)
 {
+        /*
         NOT_YET_IMPLEMENTED("VM: sys_read");
         return -1;
+        */
+
+		read_args_t read_args;
+		int	err;
+		/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
+		if ((err = copy_from_user(&read_args, arg, sizeof(read_args_t))) < 0) {
+				curthr->kt_errno = -err;
+				return -1;
+		}
+
+		uint32_t num_bytes_read = 0;
+		int bytes_to_read = read_args.nbytes;
+
+		while(num_bytes_read != read_args.nbytes) {
+			void *buffer = page_alloc();
+			KASSERT(buffer != NULL);
+
+			int bytes_read = do_read(read_args.fd, buffer, bytes_to_read);
+
+			if(bytes_read >= 0) { /* read some data */
+				/* copy_to_user(void *uaddr, const void *kaddr, size_t nbytes) */
+				if((err = copy_to_user(read_args.buf+num_bytes_read, buffer, bytes_read)) < 0) {
+					page_free(buffer);
+					curthr->kt_errno = -err;
+					return -1;
+				}
+				page_free(buffer);
+				num_bytes_read+= bytes_read;
+				bytes_to_read-= bytes_read;
+			} else { /* no data read */
+				page_free(buffer);
+				curthr->kt_errno = -bytes_read;
+				return -1;
+			}
+		}
+		return num_bytes_read; /* num_bytes_read == read_args.nbytes */
 }
 
 /*
@@ -79,8 +116,41 @@ sys_read(read_args_t *arg)
 static int
 sys_write(write_args_t *arg)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: sys_write");
         return -1;
+    */
+	write_args_t write_args;
+	int err;
+	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
+	if ((err = copy_from_user(&write_args, arg, sizeof(write_args_t))) < 0) {
+			curthr->kt_errno = -err;
+			return -1;
+	}
+
+	uint32_t bytes_to_write = write_args.nbytes;
+	int num_bytes_wrote = 0;
+
+	while(bytes_to_write > 0) {
+		void *buffer = page_alloc();
+		KASSERT(buffer != NULL);
+		if((err = copy_from_user(buffer, write_args.buf, bytes_to_write)) < 0) {
+			curthr->kt_errno = -err;
+			return -1;
+		}
+		/* buffer has the data */
+		int bytes_wrote = do_write(write_args.fd, buffer, bytes_to_write);
+		if(bytes_wrote >= 0) {
+			num_bytes_wrote+= bytes_wrote;
+			bytes_to_write-=bytes_wrote;
+			page_free(buffer);
+		} else {
+			page_free(buffer);
+			curthr->kt_errno = -bytes_wrote;
+			return -1;
+		}
+	}
+	return num_bytes_wrote;
 }
 
 /*
@@ -95,8 +165,33 @@ sys_write(write_args_t *arg)
 static int
 sys_getdents(getdents_args_t *arg)
 {
+	/*
         NOT_YET_IMPLEMENTED("VM: sys_getdents");
         return -1;
+     */
+	getdents_args_t getdents_args;
+	int err;
+	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
+	if ((err = copy_from_user(&getdents_args, arg, sizeof(getdents_args_t))) < 0) {
+			curthr->kt_errno = -err;
+			return -1;
+	}
+
+	int count = 0;
+	count = getdents_args.count;
+	while(count > 0) {
+		int do_getdent_retval = do_getdent(getdents_args.fd, getdents_args.dirp);
+		if(do_getdent_retval < 0) {
+			curthr->kt_errno = do_getdent_retval;
+			return -1;
+		}
+		count--;
+	}
+	/*
+	 * Not sure what the last part of the comment says.
+	 */
+	return 0;
+
 }
 
 #ifdef __MOUNTING__

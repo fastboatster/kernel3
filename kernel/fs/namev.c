@@ -143,6 +143,7 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		int prev_sep_pos = 0;
 		int plen = strlen(pname); /* component length */
 
+		int first_loop = 1;
 		while (1) {
 			KASSERT(dir!=NULL);
 			dbg(DBG_PRINT, "(GRADING2A 2.b)\n");
@@ -153,9 +154,10 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			if(separator!=NULL) {
 				dbg(DBG_PRINT, "Separator found at : %d", separator-pathname+1);
 				plen = (separator-pathname)-prev_sep_pos;
-				if(pathname[0] == '/') {
+				if(pathname[0] == '/' && first_loop) {
 					dbg(DBG_PRINT, "(GRADING2A)\n");
 					plen--;
+					first_loop = 0;
 				}
 				prev_sep_pos  = separator-pathname+1;
 				separator = separator+1;
