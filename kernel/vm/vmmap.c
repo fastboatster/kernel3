@@ -184,10 +184,10 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 			uint32_t vfn_start = area->vma_start;
 			int page_num = area->vma_obj->mmo_nrespages;
 			int i = 0;
-			pframe_t** pf = NULL;
+			pframe_t* pf;
 			for (i = page_num - 1; i >= 0; i--) {
-				area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
-				if (pframe_is_free(*pf)) {
+				area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
+				if (pframe_is_free(pf)) {
 					num_free++;
 				} else {
 					num_free = 0;
@@ -206,10 +206,10 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 			uint32_t vfn_start = area->vma_start;
 			int page_num = area->vma_obj->mmo_nrespages;
 			int i = 0;
-			pframe_t **pf = NULL;
+			pframe_t* pf;
 			for (i = 0; i < page_num; i++) {
-				area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
-				if (pframe_is_free(*pf)) {
+				area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
+				if (pframe_is_free(pf)) {
 					num_free++;
 				} else {
 					num_free = 0;
@@ -299,7 +299,82 @@ vmmap_clone(vmmap_t *map) {
  */
 int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		int prot, int flags, off_t off, int dir, vmarea_t **new) {
+	/*
 	NOT_YET_IMPLEMENTED("VM: vmmap_map");
+	return -1;
+	*/
+
+	KASSERT(map);
+	/*KASSERT(new);*/
+	vmarea_t* new_area  = vmarea_alloc();
+	new_area->vma_off = off;
+	new_area->vma_flags = flags;
+	new_area->vma_prot = prot;
+
+	if(!lopage) { /* lopage == 0 */
+		int start_vfn = vmmap_find_range(map, npages, dir);
+
+		if( start_vfn >= 0) {
+			new_area->vma_start = start_vfn;
+			new_area->vma_end = npages + start_vfn; /* what about 4KB ?? */
+			if(file) {
+				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_area->vma_obj);
+				if(mmobj_ret >= 0) {
+					new_area->vma_obj->mmo_ops->ref(new_area->vma_obj);
+					vref(file);
+				}
+			} else if(flags & MAP_PRIVATE) {
+				new_area->vma_obj =  shadow_create();
+			} else { /* anon obj */
+				new_area->vma_obj =  anon_create();
+			}
+			vmmap_insert(map, new_area);
+			new_area->vma_vmmap = map;
+			new = &new_area;
+			return 0;
+		}
+	} else { /* lopage != 0 */
+		int is_range_empty = vmmap_is_range_empty(map, lopage, npages);
+		if(is_range_empty) { /* range is empty */
+			new_area->vma_start = lopage;
+			new_area->vma_end = npages + lopage; /* what about 4KB ?? */
+			if(file) {
+				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_area->vma_obj);
+				if(mmobj_ret >= 0) {
+					new_area->vma_obj->mmo_ops->ref(new_area->vma_obj);
+					vref(file);
+				}
+			} else if(flags & MAP_PRIVATE) {
+				new_area->vma_obj =  shadow_create();
+			} else { /* anon obj */
+				new_area->vma_obj =  anon_create();
+			}
+			vmmap_insert(map, new_area);
+			new_area->vma_vmmap = map;
+			new = &new_area;
+			return 0;
+		} else { /* address is being used */
+			vmmap_remove(map, lopage, npages);
+			new_area->vma_start = lopage;
+			new_area->vma_end = npages + lopage; /* what about 4KB ?? */
+			if(file) {
+				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_area->vma_obj);
+				if(mmobj_ret >= 0) {
+					new_area->vma_obj->mmo_ops->ref(new_area->vma_obj);
+					vref(file);
+				}
+			} else if(flags & MAP_PRIVATE) {
+				new_area->vma_obj =  shadow_create();
+			} else { /* anon obj */
+				new_area->vma_obj =  anon_create();
+			}
+			vmmap_insert(map, new_area);
+			new_area->vma_vmmap = map;
+			new = &new_area;
+			return 0;
+		}
+	}
+
 	return -1;
 }
 
@@ -399,26 +474,32 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
  */
 int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
 	vmarea_t *area = vmmap_lookup(map, startvfn);
-	int page_num = area->vma_obj->mmo_nrespages; /*number of pages in vmarea*/
-	int i = startvfn - (area->vma_start);
-	uint32_t num_free = 0;
-	if ((uint32_t) page_num < npages) {
-		return 0;
-	}
-	pframe_t **pf = NULL;
-	for (; i < page_num; i++) {
-		area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, pf);
-		if (pframe_is_free(*pf)) {
-			num_free++;
-		} else {
-			return 0;
-		};
-		if (num_free == npages) {
+	if(area) {
+		int page_num = area->vma_obj->mmo_nrespages; /*number of pages in vmarea*/
+		int i = startvfn - (area->vma_start);
+		uint32_t num_free = 0;
+		if ((uint32_t) page_num < npages) {
 			return 1;
 		}
-	};
+		pframe_t* pf;
+		for (; i < page_num; i++) {
+			area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
+			if(pf) {
+				if (pframe_is_free(pf)) {
+					num_free++;
+				} else {
+					return 0;
+				};
+				if (num_free == npages) {
+					return 0;
+				}
+			} else {
+				return 1;
+			}
+		};
+	}
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_is_range_empty");*/
-	return 0;
+	return 1;
 }
 
 /* Read into 'buf' from the virtual address space of 'map' starting at
