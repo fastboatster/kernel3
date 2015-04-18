@@ -74,6 +74,7 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 		#define FAULT_EXEC     0x10
 	 */
 
+		dbg(DBG_PRINT, "Page fault executing..");
 
 	 /* get the base address of the page */
 	uint32_t vaddr_vfn = ADDR_TO_PN(vaddr); /* Since everything is a 4KB page, we divide the virtual address/4096 to get the actual base address */
