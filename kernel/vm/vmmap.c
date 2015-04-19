@@ -127,9 +127,8 @@ vmmap_create(void) {
  * vmmap struct. */
 void vmmap_destroy(vmmap_t *map) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_destroy");*/
-	list_link_t *link;
-	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
-			link->l_next) {
+	list_link_t *link = (&(map->vmm_list))->l_next;
+	for (; link != NULL; link = link->l_next) {
 		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
 		list_remove(link);
 		vmarea_free(area);
@@ -513,7 +512,7 @@ int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
 int vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_read");*/
 	/*convert virtual address to vfn*/
-	uint32_t addr = *(uint32_t*) vaddr;
+	uintptr_t addr = (uintptr_t) vaddr;
 	uint32_t vfn = ADDR_TO_PN(addr);
 	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
 	if (area == NULL) {
@@ -558,11 +557,11 @@ int vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count) {
  */
 int vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count) {
 	/* NOT_YET_IMPLEMENTED("VM: vmmap_write");*/
-	uint32_t addr = *(uint32_t*) vaddr;
+	uintptr_t addr = (uintptr_t) vaddr;
 	uint32_t vfn = ADDR_TO_PN(addr);
 	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
 	/*look up the page*/
-	int pagenum = vfn - (area->vma_start) + (area->vma_off); /*pagenum based on the vfn of the vaddr*/
+	int pagenum = vfn - (area->vma_start)/* + (area->vma_off)*/; /*pagenum based on the vfn of the vaddr*/
 	struct mmobj *memobj = area->vma_obj;
 	pframe_t* pg_frame = NULL;
 	int write_count = 0;
@@ -574,7 +573,7 @@ int vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count) {
 			return result;
 		};
 		void *pf_addr = pg_frame->pf_addr;
-		void * new_addr = (void*) (*(uint32_t*) pf_addr + offset); /*just so gcc doesn't complain*/
+		void * new_addr = (void*) ((uintptr_t) pf_addr + offset); /*just so gcc doesn't complain*/
 		int num_to_write = rem_count;
 		if ((PAGE_SIZE - offset) < rem_count) {
 			num_to_write = PAGE_SIZE - offset;
