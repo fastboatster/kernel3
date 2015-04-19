@@ -194,18 +194,16 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: shadow_fillpage");
         return 0;
     */
-	KASSERT(o);
-	KASSERT(pf);
+	KASSERT(pframe_is_busy(pf));
+	KASSERT(!pframe_is_pinned(pf));
+
 	pframe_t* page = NULL;
 	while(o) {
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 			if(page->pf_pagenum == pf->pf_pagenum) {
-			    /* fill the page */
-			    pframe_set_busy(pf);
-			    o->mmo_ops->fillpage(o, pf);
-		        pframe_clear_busy(pf);
-		        sched_broadcast_on(&pf->pf_waitq);
-		        return 0;
+				pframe_set_dirty(pf);/* dirty thee page */
+				memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
+				return 0;
 			}
 		}list_iterate_end();
 		o = o->mmo_shadowed;
