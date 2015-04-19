@@ -107,7 +107,8 @@ shadow_ref(mmobj_t *o)
         NOT_YET_IMPLEMENTED("VM: shadow_ref");
     */
 	KASSERT(o);
-	o->mmo_ops->ref(o);
+	/*o->mmo_ops->ref(o);*/
+	o->mmo_refcount++;
 	return;
 }
 
