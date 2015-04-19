@@ -56,7 +56,8 @@ anon_init()
         NOT_YET_IMPLEMENTED("VM: anon_init");
     */
 	anon_allocator = slab_allocator_create("anon", sizeof(mmobj_t));
-    KASSERT(anon_allocator != NULL);
+    KASSERT(anon_allocator);
+    dbg(DBG_PRINT, "(GRADING3A 4.a)\n");
 }
 
 /*
@@ -73,10 +74,10 @@ anon_create()
         return NULL;
     */
 	mmobj_t *new_anon_obj = (mmobj_t*)slab_obj_alloc(anon_allocator);
-	KASSERT(new_anon_obj);
-	mmobj_init(new_anon_obj, &anon_mmobj_ops); /* initialize the object */
-	mmobj_bottom_vmas(new_anon_obj); /* non-shadow object */
-	anon_ref(new_anon_obj);
+	if(new_anon_obj) {
+		mmobj_init(new_anon_obj, &anon_mmobj_ops); /* initialize the object */
+		anon_ref(new_anon_obj);
+	};
 	return new_anon_obj;
 }
 
@@ -91,8 +92,8 @@ anon_ref(mmobj_t *o)
 	/*
         NOT_YET_IMPLEMENTED("VM: anon_ref");
     */
-	KASSERT(o);
-/*	o->mmo_ops->ref(o); */
+	KASSERT(o && (0 < o->mmo_refcount) && (&anon_mmobj_ops == o->mmo_ops));
+	dbg(DBG_PRINT, "(GRADING3A 4.b)\n");
 	o->mmo_refcount++;
 	return;
 }
@@ -111,7 +112,8 @@ anon_put(mmobj_t *o)
 	/*
         NOT_YET_IMPLEMENTED("VM: anon_put");
     */
-	KASSERT(o);
+	KASSERT(o && (0 < o->mmo_refcount) && (&anon_mmobj_ops == o->mmo_ops));
+	dbg(DBG_PRINT, "(GRADING3A 4.c)\n");
 	o->mmo_ops->put(o);
 	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
@@ -136,16 +138,12 @@ anon_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
         NOT_YET_IMPLEMENTED("VM: anon_lookuppage");
         return -1;
     */
-	KASSERT(o);
-	KASSERT(pf);
-
 	pframe_t* page = NULL;
-	list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-		if(page->pf_pagenum == pagenum) {
-			*pf = page;
-			return 0;
-		}
-	}list_iterate_end();
+	pframe_get(o, pagenum, &page);
+	if(page) {
+	    *pf = page;
+	    return 0;
+	}
 	/* page not found */
 	return -1;
 }
@@ -166,7 +164,9 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
 	pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
 	if(page) {
 		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
-		pframe_pin(page);
+		if(!pframe_is_pinned(page)) {
+			pframe_pin(page);
+		}
 		return 0;
 	}
 	return -1;
@@ -179,15 +179,12 @@ anon_dirtypage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: anon_dirtypage");
         return -1;
     */
-	KASSERT(o);
-	KASSERT(pf);
-	pframe_t* page = NULL;
-	list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-		if(page->pf_pagenum == pf->pf_pagenum) {
-			pframe_dirty(pf);
-			return 0;
-		}
-	}list_iterate_end();
+	if(!pframe_is_dirty(pf)) {
+		pframe_set_dirty(pf);
+	}
+	if(pframe_is_dirty(pf)) {
+		return 0;
+	}
 	return -1;
 }
 

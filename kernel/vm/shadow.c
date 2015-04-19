@@ -69,7 +69,8 @@ shadow_init()
         NOT_YET_IMPLEMENTED("VM: shadow_init");
     */
 	shadow_allocator = slab_allocator_create("shadow", sizeof(mmobj_t));
-    KASSERT(shadow_allocator != NULL);
+    KASSERT(shadow_allocator);
+    dbg(DBG_PRINT, "(GRADING3A 6.a)\n");
 }
 
 /*
@@ -86,12 +87,10 @@ shadow_create()
         return NULL;
     */
 	mmobj_t *new_mmobj = (mmobj_t*)slab_obj_alloc(shadow_allocator);
-	KASSERT(new_mmobj);
-
-	mmobj_init(new_mmobj, &shadow_mmobj_ops);
-	mmobj_bottom_obj(new_mmobj);
-	new_mmobj->mmo_refcount++;
-
+	if(new_mmobj) {
+		mmobj_init(new_mmobj, &shadow_mmobj_ops);
+		shadow_ref(new_mmobj);
+	}
 	return new_mmobj;
 }
 
@@ -106,8 +105,8 @@ shadow_ref(mmobj_t *o)
 	/*
         NOT_YET_IMPLEMENTED("VM: shadow_ref");
     */
-	KASSERT(o);
-	/*o->mmo_ops->ref(o);*/
+	KASSERT(o && (0 < o->mmo_refcount) && (&shadow_mmobj_ops == o->mmo_ops));
+	dbg(DBG_PRINT, "(GRADING3A 6.b)\n");
 	o->mmo_refcount++;
 	return;
 }
@@ -126,7 +125,8 @@ shadow_put(mmobj_t *o)
 	/*
         NOT_YET_IMPLEMENTED("VM: shadow_put");
     */
-	KASSERT(o);
+	KASSERT(o && (0 < o->mmo_refcount) && (&shadow_mmobj_ops == o->mmo_ops));
+	dbg(DBG_PRINT, "(GRADING3A 6.c)\n");
 	o->mmo_ops->put(o);
 	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
@@ -158,22 +158,39 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
         NOT_YET_IMPLEMENTED("VM: shadow_lookuppage");
         return 0;
     */
-	KASSERT(o);
-	KASSERT(pf);
 	if(forwrite) { /* copy-on-write */
-		(*pf)->pf_pagenum = pagenum; /* can these 2 pages have the same pagenum ?? */
-		return shadow_fillpage(o, *pf);
+		pframe_get(o, pagenum, pf);
+		return 0;
 	} else { /* no copy on write */
 		pframe_t* page = NULL;
-		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-			if(page->pf_pagenum == pagenum) {
-				*pf = page;
+		mmobj_t* temp_mmobj = o;
+		if(temp_mmobj->mmo_shadowed) { /* look for all shadowed object */
+			while(temp_mmobj->mmo_shadowed) {
+				page = pframe_get_resident(temp_mmobj, pagenum);
+				if(page) {
+					 while (pframe_is_busy(page)) {
+						 sched_sleep_on(&page->pf_waitq);
+					 }
+					 *pf = page;
+					return 0;
+				}
+				temp_mmobj = temp_mmobj->mmo_shadowed;
+			}
+			/* object not found in any of the shadowed object, check in bottom object */
+			pframe_get(temp_mmobj, pagenum, &page);
+			if(page) {
+				 *pf = page;
 				return 0;
 			}
-		}list_iterate_end();
-		/* page not found */
-		return -1;
+		} else { /* not a shadowed object */
+			pframe_get(temp_mmobj, pagenum, &page);
+			if(page) {
+				 *pf = page;
+				return 0;
+			}
+		}
 	}
+	return -1;
 }
 
 /* As per the specification in mmobj.h, fill the page frame starting
@@ -195,13 +212,15 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
         return 0;
     */
 	KASSERT(pframe_is_busy(pf));
+	dbg(DBG_PRINT, "(GRADING3A 6.d)\n");
 	KASSERT(!pframe_is_pinned(pf));
+	dbg(DBG_PRINT, "(GRADING3A 6.d)\n");
 
 	pframe_t* page = NULL;
 	while(o) {
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 			if(page->pf_pagenum == pf->pf_pagenum) {
-				pframe_set_dirty(pf);/* dirty thee page */
+				pframe_set_dirty(pf);/* dirty the page */
 				memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
 				return 0;
 			}
@@ -220,18 +239,11 @@ shadow_dirtypage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: shadow_dirtypage");
         return -1;
     */
-	KASSERT(o);
-	KASSERT(pf);
-	pframe_t* page = NULL;
-	while(o) {
-		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-			if(page->pf_pagenum == pf->pf_pagenum) {
-			    /* dirty the page */
-				pframe_dirty(pf);
-		        return 0;
-			}
-		}list_iterate_end();
-		o = o->mmo_shadowed;
+	if(!pframe_is_dirty(pf)) {
+		pframe_set_dirty(pf);
+	}
+	if(pframe_is_dirty(pf)) {
+		return 0;
 	}
 	return -1;
 }
@@ -243,8 +255,7 @@ shadow_cleanpage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: shadow_cleanpage");
         return -1;
     */
-	KASSERT(o);
-	KASSERT(pf);
+
 	pframe_t* page = NULL;
 	while(o) {
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
