@@ -102,10 +102,12 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 			uint32_t pagenum = (vmarea->vma_start - vaddr_vfn) + vmarea->vma_off;
 			if(pframe_get(vmarea->vma_obj, pagenum, &new_frame) >= 0){
 				uintptr_t paddr = pt_virt_to_phys((uintptr_t)new_frame->pf_addr); /* gives the physical address */
-				if(pt_map(curproc->p_pagedir, vaddr, paddr, PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
+				if(pt_map(curproc->p_pagedir, PAGE_ALIGN_DOWN(vaddr), PAGE_ALIGN_DOWN(paddr), PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
 					return;
 				}
-				sched_broadcast_on(&new_frame->pf_waitq); /* this helps the waiting process to wake up */
+				tlb_flush_all();
+				sched_broadcast_on(&new_frame->pf_waitq);
+				return;/* this helps the waiting process to wake up */
 			} else {
 				return;
 			}

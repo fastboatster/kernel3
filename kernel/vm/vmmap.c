@@ -128,7 +128,7 @@ vmmap_create(void) {
 void vmmap_destroy(vmmap_t *map) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_destroy");*/
 	list_link_t *link = (&(map->vmm_list))->l_next;
-	for (; link != NULL; link = link->l_next) {
+	for (; link != &(map->vmm_list); link = link->l_next) {
 		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
 		list_remove(link);
 		vmarea_free(area);
