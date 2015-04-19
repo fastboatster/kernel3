@@ -12,8 +12,8 @@
 #
      DRIVERS=1
          VFS=1
-        S5FS=0
-          VM=0
+        S5FS=1
+          VM=1
      DYNAMIC=0
 # When you finish S5FS, first enable "VM"; once this is working, then enable
 # "DYNAMIC".
@@ -37,7 +37,7 @@
 # all the printout from dbg() statements.
 #
 # If you change this value, you must do "make clean" and "make".
-        GDBWAIT=0
+        GDBWAIT=1
 
 # Set which CS402 tests are to run.  Valid from 0 (no tests except running init)
 # to 10 (run all tests plus student tests).
@@ -90,7 +90,7 @@
 # Debug message behavior. Note that this can be changed at runtime by
 # modifying the dbg_modes global variable.
 # All debug statements
-        DBG = test
+        DBG = all
 # Example: change to this for no debug statements
 #       DBG = -all
 # Example: select all the "General" stuff in "kernel/include/util/debug.h"
