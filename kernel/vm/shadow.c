@@ -255,7 +255,6 @@ shadow_cleanpage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: shadow_cleanpage");
         return -1;
     */
-
 	pframe_t* page = NULL;
 	while(o) {
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
