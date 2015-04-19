@@ -105,7 +105,6 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 				if(pt_map(curproc->p_pagedir, PAGE_ALIGN_DOWN(vaddr), PAGE_ALIGN_DOWN(paddr), PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
 					return;
 				}
-				tlb_flush_all();
 				sched_broadcast_on(&new_frame->pf_waitq);
 				return;/* this helps the waiting process to wake up */
 			} else {
