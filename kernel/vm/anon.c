@@ -144,7 +144,7 @@ anon_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 	    *pf = page;
 	    return 0;
 	}
-	/* page not found */
+	/* page not found  */
 	return -1;
 }
 
