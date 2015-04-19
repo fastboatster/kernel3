@@ -201,7 +201,7 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	while(o) {
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 			if(page->pf_pagenum == pf->pf_pagenum) {
-				pframe_set_dirty(pf);/* dirty the page */
+				pframe_set_dirty(pf);/* dirty thee page */
 				memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
 				return 0;
 			}
