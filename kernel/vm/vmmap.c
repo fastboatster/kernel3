@@ -565,7 +565,7 @@ int vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count) {
 	struct mmobj *memobj = area->vma_obj;
 	pframe_t* pg_frame = NULL;
 	int write_count = 0;
-	uint32_t offset = PAGE_OFFSET(addr);/*(addr << 20) >> 20;*//*get the offset in the physical page*/
+	uintptr_t offset = PAGE_OFFSET(addr);/*(addr << 20) >> 20;*//*get the offset in the physical page*/
 	uint32_t rem_count = count;
 	while (rem_count > 0) {
 		int result = pframe_get(memobj, pagenum, &pg_frame);
