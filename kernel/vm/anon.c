@@ -159,19 +159,17 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: anon_fillpage");
         return 0;
     */
-	KASSERT(o);
-	KASSERT(pf);
-	pframe_t* page = NULL;
-	list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-		if(page->pf_pagenum == pf->pf_pagenum) {
-	        pframe_set_busy(pf);
-	        int ret = pf->pf_obj->mmo_ops->fillpage(o, pf);
-	        pframe_clear_busy(pf);
-	        sched_broadcast_on(&pf->pf_waitq);
-	        return ret;
-		}
-	}list_iterate_end();
-	return -1; /* did not fill a page */
+	KASSERT(pframe_is_busy(pf));
+	KASSERT(!pframe_is_pinned(pf));
+
+	/* get the page from the given frame */
+	pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
+	if(page) {
+		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
+		pframe_pin(page);
+		return 0;
+	}
+	return -1;
 }
 
 static int
