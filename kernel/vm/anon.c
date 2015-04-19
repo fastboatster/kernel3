@@ -74,7 +74,7 @@ anon_create()
     */
 	mmobj_t *new_anon_obj = (mmobj_t*)slab_obj_alloc(anon_allocator);
 	KASSERT(new_anon_obj);
-	mmobj_init(new_anon_obj, new_anon_obj->mmo_ops); /* initialize the object */
+	mmobj_init(new_anon_obj, &anon_mmobj_ops); /* initialize the object */
 	mmobj_bottom_vmas(new_anon_obj); /* non-shadow object */
 	anon_ref(new_anon_obj);
 	return new_anon_obj;
@@ -92,7 +92,8 @@ anon_ref(mmobj_t *o)
         NOT_YET_IMPLEMENTED("VM: anon_ref");
     */
 	KASSERT(o);
-	o->mmo_ops->ref(o);
+/*	o->mmo_ops->ref(o); */
+	o->mmo_refcount++;
 	return;
 }
 
