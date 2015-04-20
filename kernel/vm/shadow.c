@@ -89,7 +89,7 @@ shadow_create()
 	mmobj_t *new_mmobj = (mmobj_t*)slab_obj_alloc(shadow_allocator);
 	if(new_mmobj) {
 		mmobj_init(new_mmobj, &shadow_mmobj_ops);
-		shadow_ref(new_mmobj);
+		new_mmobj->mmo_refcount++;
 	}
 	return new_mmobj;
 }
