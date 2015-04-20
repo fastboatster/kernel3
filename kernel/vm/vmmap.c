@@ -421,9 +421,9 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 		return 1;
 	}
 	/*case 4*/
-	if (lopage < vmarea_start && lopage_end > vmarea_end) {
+	if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
 		list_remove(&area->vma_plink);
-		list_remove(&area->vma_olink);
+		/*list_remove(&area->vma_olink);*/
 		vmarea_free(area);
 		return 1;
 	}
