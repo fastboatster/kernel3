@@ -316,18 +316,19 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		if( start_vfn >= 0) {
 			new_area->vma_start = start_vfn;
 			new_area->vma_end = npages + start_vfn; /* what about 4KB ?? */
-			if(file) {
+		vmmap_insert(map, new_area);
+		if(file) {
 				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_area->vma_obj);
 				if(mmobj_ret >= 0) {
 					new_area->vma_obj->mmo_ops->ref(new_area->vma_obj);
 					vref(file);
 				}
-			} else if(flags & MAP_PRIVATE) {
+			}/* else if(flags & MAP_PRIVATE) {
 				new_area->vma_obj =  shadow_create();
-			} else { /* anon obj */
+			} */else { /* anon obj */
 				new_area->vma_obj =  anon_create();
 			}
-			vmmap_insert(map, new_area);
+
 			new_area->vma_vmmap = map;
 			new = &new_area;
 			return 0;
@@ -337,18 +338,19 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		if(is_range_empty) { /* range is empty */
 			new_area->vma_start = lopage;
 			new_area->vma_end = npages + lopage; /* what about 4KB ?? */
-			if(file) {
+		vmmap_insert(map, new_area);
+		if(file) {
 				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_area->vma_obj);
 				if(mmobj_ret >= 0) {
 					new_area->vma_obj->mmo_ops->ref(new_area->vma_obj);
 					vref(file);
 				}
-			} else if(flags & MAP_PRIVATE) {
+			}/* else if(flags & MAP_PRIVATE) {
 				new_area->vma_obj =  shadow_create();
-			} else { /* anon obj */
+			} */else { /* anon obj */
 				new_area->vma_obj =  anon_create();
 			}
-			vmmap_insert(map, new_area);
+
 			new_area->vma_vmmap = map;
 			new = &new_area;
 			return 0;
@@ -356,18 +358,19 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 			vmmap_remove(map, lopage, npages);
 			new_area->vma_start = lopage;
 			new_area->vma_end = npages + lopage; /* what about 4KB ?? */
-			if(file) {
+		vmmap_insert(map, new_area);
+		if(file) {
 				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_area->vma_obj);
 				if(mmobj_ret >= 0) {
 					new_area->vma_obj->mmo_ops->ref(new_area->vma_obj);
 					vref(file);
 				}
-			} else if(flags & MAP_PRIVATE) {
+			}/* else if(flags & MAP_PRIVATE) {
 				new_area->vma_obj =  shadow_create();
-			} else { /* anon obj */
+			} */else { /* anon obj */
 				new_area->vma_obj =  anon_create();
 			}
-			vmmap_insert(map, new_area);
+
 			new_area->vma_vmmap = map;
 			new = &new_area;
 			return 0;
@@ -418,9 +421,9 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 		return 1;
 	}
 	/*case 4*/
-	if (lopage < vmarea_start && lopage_end > vmarea_end) {
+	if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
 		list_remove(&area->vma_plink);
-		list_remove(&area->vma_olink);
+		/*list_remove(&area->vma_olink);*/
 		vmarea_free(area);
 		return 1;
 	}

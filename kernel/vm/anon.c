@@ -76,7 +76,8 @@ anon_create()
 	mmobj_t *new_anon_obj = (mmobj_t*)slab_obj_alloc(anon_allocator);
 	if(new_anon_obj) {
 		mmobj_init(new_anon_obj, &anon_mmobj_ops); /* initialize the object */
-		anon_ref(new_anon_obj);
+		/*anon_ref(new_anon_obj);*/
+		new_anon_obj->mmo_refcount++; /*do we need this at all?*/
 	};
 	return new_anon_obj;
 }
@@ -114,7 +115,8 @@ anon_put(mmobj_t *o)
     */
 	KASSERT(o && (0 < o->mmo_refcount) && (&anon_mmobj_ops == o->mmo_ops));
 	dbg(DBG_PRINT, "(GRADING3A 4.c)\n");
-	o->mmo_ops->put(o);
+	/*o->mmo_ops->put(o);*/
+	o->mmo_refcount--;
 	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
