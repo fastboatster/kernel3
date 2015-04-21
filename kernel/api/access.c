@@ -136,8 +136,15 @@ fail:
 int
 addr_perm(struct proc *p, const void *vaddr, int perm)
 {
-        NOT_YET_IMPLEMENTED("VM: addr_perm");
-        return 0;
+     vmmap_t* map = p->p_vmmap;
+     vmarea_t *area = vmmap_lookup(map, (uint32_t)vaddr);
+     int area_perm = area->vma_prot;
+     if (area_perm & perm) {
+    	 return 1;
+     }
+     return 0;
+	/*  NOT_YET_IMPLEMENTED("VM: addr_perm");
+        return 0;*/
 }
 
 /*
@@ -152,6 +159,6 @@ addr_perm(struct proc *p, const void *vaddr, int perm)
 int
 range_perm(struct proc *p, const void *avaddr, size_t len, int perm)
 {
-        NOT_YET_IMPLEMENTED("VM: range_perm");
-        return 0;
+       /* NOT_YET_IMPLEMENTED("VM: range_perm");*/
+        return 1;
 }
