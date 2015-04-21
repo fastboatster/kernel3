@@ -159,10 +159,10 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: anon_fillpage");
         return 0;
     */
-	KASSERT(pframe_is_busy(pf));
+KASSERT(pframe_is_busy(pf));
 	KASSERT(!pframe_is_pinned(pf));
 
-	/* get the page from the given frame */
+	/* get the page from the given frame*/
 	pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
 	if(page) {
 		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
@@ -172,6 +172,7 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
 		return 0;
 	}
 	return -1;
+
 }
 
 static int
