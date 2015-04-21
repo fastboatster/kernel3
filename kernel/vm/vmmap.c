@@ -360,104 +360,88 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 	if(!lopage) { /* lopage == 0 */
 		int start_vfn = vmmap_find_range(map, npages, dir);
 		if(start_vfn < 0) {
+			vmarea_free(new_area);
 			return start_vfn;
 		}
 		new_area->vma_start = start_vfn;
 		new_area->vma_end = npages + start_vfn; /* what about 4KB ?? */
 		vmmap_insert(map, new_area);
-		if(file) { /* are shadow objects */
+		if(file) { /* file */
+			KASSERT(file->vn_ops&& file->vn_ops->mmap);
 			int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_mmobj);
 			if(mmobj_ret < 0){
+				vmarea_free(new_area);
 				return mmobj_ret;
 			}
+			new_mmobj->mmo_ops->ref(new_mmobj);
+		} else { /* anon object */
+			if((new_mmobj = anon_create()) == NULL) {
+				vmarea_free(new_area);
+				return -1;
+			}
+		}
+
+		if(flags & MAP_PRIVATE) { /* shadow object */
 			mmobj_t *new_shadow_obj = NULL;
 			if((new_shadow_obj = shadow_create()) !=NULL) {
 			   new_shadow_obj->mmo_shadowed = new_mmobj;
 			   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
-			   new_mmobj->mmo_ops->ref(new_mmobj);
 			   new_area->vma_obj = new_shadow_obj;
+			} else {
+				new_mmobj->mmo_ops->put(new_mmobj); /*decrement the ref count of the mmobj */
+				vmarea_free(new_area); /* free the VM area */
+				return -1;
 			}
-		}else if(flags & MAP_PRIVATE) {
-			if((new_mmobj = shadow_create()) != NULL) {
-				new_mmobj->mmo_ops->ref(new_mmobj);
-				new_area->vma_obj =  new_mmobj;
-			}
-		} else { /* anon obj */
-			if((new_mmobj = anon_create()) != NULL) {
-				new_mmobj->mmo_ops->ref(new_mmobj);
-				new_area->vma_obj =  new_mmobj;
-			}
+		} else { /* no shadow object , just the bottom object */
+			new_area->vma_obj = new_mmobj;
 		}
 		new_area->vma_vmmap = map;
 		new = &new_area;
 		return 0;
 	} else { /* lopage != 0 */
 		int is_range_empty = vmmap_is_range_empty(map, lopage, npages);
-		if(is_range_empty) { /* range is empty */
-			new_area->vma_start = lopage;
-			new_area->vma_end = npages + lopage; /* what about 4KB ?? */
-			vmmap_insert(map, new_area);
-			if(file) {
-				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_mmobj);
-				if(mmobj_ret < 0) {
-					return mmobj_ret;
-				}
-				mmobj_t *new_shadow_obj = NULL;
-				if((new_shadow_obj = shadow_create()) !=NULL) {
-				   new_shadow_obj->mmo_shadowed = new_mmobj;
-				   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
-				   new_mmobj->mmo_ops->ref(new_mmobj);
-				   new_area->vma_obj = new_shadow_obj;
-				}
-			} else if(flags & MAP_PRIVATE) {
-				if((new_mmobj = shadow_create()) != NULL) {
-					new_mmobj->mmo_ops->ref(new_mmobj);
-					new_area->vma_obj =  new_mmobj;
-				}
-			} else { /* anon obj */
-				if((new_mmobj = anon_create()) != NULL) {
-					new_mmobj->mmo_ops->ref(new_mmobj);
-					new_area->vma_obj =  new_mmobj;
-				}
-			}
-			new_area->vma_vmmap = map;
-			new = &new_area;
-			return 0;
-		} else { /* address is being used */
+		if(!is_range_empty) {
 			int is_map_removed = vmmap_remove(map, lopage, npages);
 			if(is_map_removed < 0) {
+				vmarea_free(new_area);
 				return is_map_removed;
 			}
-			new_area->vma_start = lopage;
-			new_area->vma_end = npages + lopage; /* what about 4KB ?? */
-			vmmap_insert(map, new_area);
-			if(file) {
-				int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_mmobj);
-				if(mmobj_ret < 0) {
-					return mmobj_ret;
-				}
-				mmobj_t *new_shadow_obj = NULL;
-				if((new_shadow_obj = shadow_create()) !=NULL) {
-				   new_shadow_obj->mmo_shadowed = new_mmobj;
-				   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
-				   new_mmobj->mmo_ops->ref(new_mmobj);
-				   new_area->vma_obj = new_shadow_obj;
-				}
-			} else if(flags & MAP_PRIVATE) {
-				if((new_mmobj = shadow_create()) != NULL) {
-					new_mmobj->mmo_ops->ref(new_mmobj);
-					new_area->vma_obj =  new_mmobj;
-				}
-			} else { /* anon obj */
-				if((new_mmobj = anon_create()) != NULL) {
-					new_mmobj->mmo_ops->ref(new_mmobj);
-					new_area->vma_obj =  new_mmobj;
-				}
-			}
-			new_area->vma_vmmap = map;
-			new = &new_area;
-			return 0;
 		}
+		new_area->vma_start = lopage;
+		new_area->vma_end = npages + lopage; /* what about 4KB ?? */
+		vmmap_insert(map, new_area);
+		if(file) { /* file */
+			KASSERT(file->vn_ops&& file->vn_ops->mmap);
+			int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_mmobj);
+			if(mmobj_ret < 0){
+				vmarea_free(new_area);
+				return mmobj_ret;
+			}
+			new_mmobj->mmo_ops->ref(new_mmobj);
+		} else { /* anon object */
+			if((new_mmobj = anon_create()) == NULL) {
+				vmarea_free(new_area);
+				return -1;
+			}
+		}
+
+		if(flags & MAP_PRIVATE) { /* shadow object */
+			mmobj_t *new_shadow_obj = NULL;
+			if((new_shadow_obj = shadow_create()) !=NULL) {
+			   new_shadow_obj->mmo_shadowed = new_mmobj;
+			   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
+			   new_area->vma_obj = new_shadow_obj;
+			} else {
+				new_mmobj->mmo_ops->put(new_mmobj); /*decrement the ref count of the mmobj */
+				vmarea_free(new_area); /* free the VM area */
+				return -1;
+			}
+		} else { /* no shadow object , just the bottom object */
+			new_area->vma_obj = new_mmobj;
+		}
+		new_area->vma_vmmap = map;
+		new = &new_area;
+		return 0;
 	}
 	return -1;
 }
@@ -560,22 +544,6 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
  * given range, 0 otherwise.
  */
 int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
-
-	uint32_t endvfn = startvfn + npages;
-	KASSERT((startvfn < endvfn) && (ADDR_TO_PN(USER_MEM_LOW) <= startvfn) && (ADDR_TO_PN(USER_MEM_HIGH) >= endvfn));
-
-    vmarea_t *area = NULL;
-    int seems_to_be_empty = 0;
-    list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
-    	if(area->vma_start > endvfn || area->vma_end <= startvfn){
-    		seems_to_be_empty = 1;
-        }else{
-        	return 0;
-        }
-    }list_iterate_end();
-
-    return 1;
-	/*
 	vmarea_t *area = vmmap_lookup(map, startvfn);
 	if(area) {
 		int page_num = area->vma_obj->mmo_nrespages;
@@ -600,9 +568,9 @@ int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
 				return 1;
 			}
 		};
-	}*/
+	}
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_is_range_empty");*/
-	/* return 1; */
+	return 1;
 }
 
 /* Read into 'buf' from the virtual address space of 'map' starting at
