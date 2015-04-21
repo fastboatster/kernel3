@@ -592,30 +592,28 @@ int vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count) {
 	}
 	/*look up the page*/
 	struct mmobj *memobj = area->vma_obj;
-	int pagenum = vfn - (area->vma_start); /*pagenum based on the vfn of the vaddr*/
+	int pagenum = vfn - (area->vma_start)/* + (area->vma_off)*/; /*pagenum based on the vfn of the vaddr*/
 	pframe_t* pg_frame = NULL;
-	int read_count = 0;
-	uint32_t offset = PAGE_OFFSET(addr);/*(addr << 20) >> 20;*//*get the offset in the physical page*/
-	uint32_t rem_count = count;
-	while (rem_count > 0) {
-
-		int result = pframe_get(memobj, pagenum, &pg_frame);
-		if (result < 0) {
-			return result;
-		};
-		void *pf_addr = pg_frame->pf_addr;
-		void * new_addr = (void*) (*(uint32_t*) pf_addr + offset); /*just so gcc doesn't complain*/
-		int num_to_read = rem_count;
-		if ((PAGE_SIZE - offset) < rem_count) {
-			num_to_read = PAGE_SIZE - offset;
-			pagenum++;
-			offset = 0;
+	int write_count = 0;
+		uintptr_t offset = PAGE_OFFSET(addr);/*(addr << 20) >> 20;*//*get the offset in the physical page*/
+		uint32_t rem_count = count;
+		while (rem_count > 0) {
+			int result = pframe_get(memobj, pagenum, &pg_frame);
+			if (result < 0) {
+				return result;
+			};
+			void *pf_addr = pg_frame->pf_addr;
+			void * new_addr = (void*) ((uintptr_t) pf_addr + offset); /*just so gcc doesn't complain*/
+			int num_to_write = rem_count;
+			if ((PAGE_SIZE - offset) < rem_count) {
+				num_to_write = PAGE_SIZE - offset;
+				pagenum++;
+				offset = 0;
+			}
+			memcpy((void*)((uintptr_t)buf + write_count),new_addr,num_to_write);
+			write_count += num_to_write;
+			rem_count -= num_to_write;
 		}
-		memcpy((void*)((uintptr_t)buf + read_count), new_addr, num_to_read);
-		read_count += num_to_read;
-		rem_count -= num_to_read;
-
-	}
 	return 0;
 }
 
