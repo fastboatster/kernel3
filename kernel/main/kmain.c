@@ -418,9 +418,9 @@ initproc_run(int arg1, void *arg2)
     kshell_destroy(kshell);
     */
 #else
-    my_faber_thread_test(NULL, NULL, NULL);
+   /* my_faber_thread_test(NULL, NULL, NULL);
     my_sunghan_test(NULL, NULL, NULL);
-    my_sunghan_deadlock_test(NULL, NULL, NULL);
+    my_sunghan_deadlock_test(NULL, NULL, NULL);*/
 #endif
 	/* waits for all children to die */
 	while(do_waitpid(-1, 0, NULL) != -ECHILD);
