@@ -185,7 +185,9 @@ proc_create(char *name)
 	/* VM */
 	new_proc->p_brk = NULL; 		/* process break; see brk(2) */
 	new_proc->p_start_brk = NULL; 	/* initial value of process break */
-	new_proc->p_vmmap = NULL; 		/* list of areas mapped into */
+	new_proc->p_vmmap = vmmap_create();
+	new_proc->p_vmmap->vmm_proc = new_proc;
+	/* list of areas mapped into */
 
 	dbg(DBG_PRINT, "INFO : new process created with PID = %d \n", new_proc->p_pid);
 	return new_proc;

@@ -74,6 +74,7 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 		#define FAULT_EXEC     0x10
 	 */
 
+		dbg(DBG_PRINT, "Page fault executing..");
 
 	 /* get the base address of the page */
 	uint32_t vaddr_vfn = ADDR_TO_PN(vaddr); /* Since everything is a 4KB page, we divide the virtual address/4096 to get the actual base address */
@@ -98,13 +99,17 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 		} else { /* not sure what to do with FAULT_USER/ FAULT_PRESENT */
 			/*pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result) */
 			pframe_t *new_frame = NULL;
-			uint32_t pagenum = (vmarea->vma_start - vaddr_vfn) + vmarea->vma_off;
-			if(pframe_get(vmarea->vma_obj, pagenum, &new_frame) >= 0){
+			uint32_t pagenum = (vaddr_vfn - vmarea->vma_start)/* + vmarea->vma_off*/;
+			if(pframe_get(vmarea->vma_obj, pagenum, &new_frame) >= 0) {
+				pframe_clear_busy(new_frame);
 				uintptr_t paddr = pt_virt_to_phys((uintptr_t)new_frame->pf_addr); /* gives the physical address */
-				if(pt_map(curproc->p_pagedir, vaddr, paddr, PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
+				dbg(DBG_PRINT, "Page Align down = %d, normal conversion = %d\n",PAGE_ALIGN_DOWN(vaddr), (uintptr_t)PN_TO_ADDR(ADDR_TO_PN(vaddr)));
+				dbg(DBG_PRINT, "Page_offset = %d, pagenum = %d\n", PAGE_OFFSET(vaddr), pagenum);
+				if(pt_map(curproc->p_pagedir, PAGE_ALIGN_DOWN(vaddr), paddr, PD_PRESENT|PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
 					return;
 				}
-				sched_broadcast_on(&new_frame->pf_waitq); /* this helps the waiting process to wake up */
+				sched_broadcast_on(&new_frame->pf_waitq);
+				return;/* this helps the waiting process to wake up */
 			} else {
 				return;
 			}
