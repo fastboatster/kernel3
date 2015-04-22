@@ -150,13 +150,18 @@ void vmmap_insert(vmmap_t *map, vmarea_t *newvma) {
 		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
 		uint32_t vma_start = area->vma_start;
 		uint32_t vma_end = area->vma_end;
-		if (link->l_next != &(map->vmm_list) && vma_end <= new_vma_start
+		if (new_vma_start < vma_start) {
+			list_insert_before(link, &(newvma->vma_plink));
+			newvma->vma_vmmap = map;
+			return;
+		}
+	/*if (link->l_next != &(map->vmm_list) && vma_end <= new_vma_start
 				&& new_vma_end
 						<= (list_item(link->l_next, vmarea_t, vma_plink))->vma_start) {
 			list_insert_before(link->l_next, &(newvma->vma_plink));
 			newvma->vma_vmmap = map;
 			return;
-		}
+		}*/
 	};
 	/*if it can't be inserted between any vmareas, append to tail*/
 	list_insert_tail(&(map->vmm_list), &(newvma->vma_plink));

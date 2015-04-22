@@ -402,7 +402,7 @@ initproc_run(int arg1, void *arg2)
 	/*char* argv[] = { NULL };*/
 	char *argv[]={ "/bin/uname", "-a", NULL };
 	char* envp [] = { NULL };
-	kernel_execve("/bin/uname", argv, envp);
+	kernel_execve("usr/bin/hello", argv, envp);
 
 	/*
 	dbg(DBG_PRINT, "(GRADING1B)\n");
