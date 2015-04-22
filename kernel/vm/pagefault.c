@@ -103,9 +103,9 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 			if(pframe_get(vmarea->vma_obj, pagenum, &new_frame) >= 0) {
 				pframe_clear_busy(new_frame);
 				uintptr_t paddr = pt_virt_to_phys((uintptr_t)new_frame->pf_addr); /* gives the physical address */
-				dbg(DBG_PRINT, "Page Align down = %d, normal conversion = %d\n",PAGE_ALIGN_DOWN(vaddr), (uintptr_t)PN_TO_ADDR(ADDR_TO_PN(vaddr)));
+				dbg(DBG_PRINT, "Page Align down = %d, normal conversion = %d\n",(uintptr_t)PAGE_ALIGN_DOWN(vaddr), (uintptr_t)PN_TO_ADDR(ADDR_TO_PN(vaddr)));
 				dbg(DBG_PRINT, "Page_offset = %d, pagenum = %d\n", PAGE_OFFSET(vaddr), pagenum);
-				if(pt_map(curproc->p_pagedir, PAGE_ALIGN_DOWN(vaddr), paddr, PD_PRESENT|PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
+				if(pt_map(curproc->p_pagedir, (uintptr_t)PAGE_ALIGN_DOWN(vaddr), paddr, PD_PRESENT|PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
 					return;
 				}
 				sched_broadcast_on(&new_frame->pf_waitq);
