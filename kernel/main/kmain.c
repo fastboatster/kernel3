@@ -399,9 +399,10 @@ initproc_run(int arg1, void *arg2)
 
 	/* NOT_YET_IMPLEMENTED("PROCS: initproc_run");*/
 #ifdef __DRIVERS__
-	char* argv[] = { NULL };
+	/*char* argv[] = { NULL };*/
+	char *argv[]={ "/bin/uname", "-a", NULL };
 	char* envp [] = { NULL };
-	kernel_execve("/usr/bin/hello", argv, envp);
+	kernel_execve("/bin/uname", argv, envp);
 
 	/*
 	dbg(DBG_PRINT, "(GRADING1B)\n");

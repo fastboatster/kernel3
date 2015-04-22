@@ -160,7 +160,7 @@ int
 range_perm(struct proc *p, const void *avaddr, size_t len, int perm) /*needs work*/
 {
        /* NOT_YET_IMPLEMENTED("VM: range_perm");*/
-	uint32_t end_addr = (uint32_t)avaddr + len;
+/*	uint32_t end_addr = (uint32_t)avaddr + len;
 	int start_page = ADDR_TO_PN(avaddr);
 	int end_page = ADDR_TO_PN(end_addr);
 	vmmap_t* map = p->p_vmmap;
@@ -172,7 +172,7 @@ range_perm(struct proc *p, const void *avaddr, size_t len, int perm) /*needs wor
 	list_t lhead = map->vmm_list;
 	list_link_t *link = &(area->vma_plink);
 	for (link = link->l_next; link != &lhead; link = link->l_next) {
-		vmarea_t* area = list_item(link, vmarea_t, vma_plink); /*get a memory area*/
+		vmarea_t* area = list_item(link, vmarea_t, vma_plink);
 		 int vfn_start = area->vma_start;
 		 if (end_page < vfn_start) {
 			 break;
@@ -181,6 +181,6 @@ range_perm(struct proc *p, const void *avaddr, size_t len, int perm) /*needs wor
 		 if (!(area_perm & perm)) {
 			 return 0;
 		 };
-	 }
+	 }*/
      return 1;
 }
