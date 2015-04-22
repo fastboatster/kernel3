@@ -395,6 +395,8 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		} else { /* no shadow object , just the bottom object */
 			new_area->vma_obj = new_mmobj;
 		}
+
+		new_area->vma_obj = new_mmobj;
 		new_area->vma_vmmap = map;
 		new = &new_area;
 		return 0;
@@ -439,6 +441,8 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		} else { /* no shadow object , just the bottom object */
 			new_area->vma_obj = new_mmobj;
 		}
+
+		new_area->vma_obj = new_mmobj;
 		new_area->vma_vmmap = map;
 		new = &new_area;
 		return 0;
@@ -477,65 +481,65 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
  */
 int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_remove");*/
-	/*vmarea_t *area = vmmap_lookup(map, lopage); */
-	vmarea_t *area =  NULL;
-	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink) {
-		uint32_t vmarea_start = area->vma_start;
-		uint32_t vmarea_end = area->vma_end;
-		uint32_t lopage_end = lopage + npages;
-		/*case 2:*/
-		if (vmarea_start < lopage && vmarea_end < lopage_end) {
-			area->vma_end = lopage_end;
-			return 0;
-		}
-		/*case 4*/
-		if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
-			list_remove(&area->vma_plink);
-			/*list_remove(&area->vma_olink);*/
-			vmarea_free(area);
-			return 0;
-		}
-		/*case 3*/
-		if (lopage < vmarea_start && lopage_end < vmarea_end) {
-			area->vma_start = lopage_end;
-			uint32_t old_offset = area->vma_off;
-			area->vma_off = old_offset + (lopage_end - vmarea_start);
-			return 0;
-		}
-		/*case 1*/
-		if (vmarea_start < lopage && lopage_end < vmarea_end) {
-			/*allocate 2 new vmareas instead of the old one*/
-			vmarea_t* l_area = vmarea_alloc(); /*area to the left of a removed region*/
-			vmarea_t *r_area = vmarea_alloc(); /*area to the right*/
-			/*copy stuff from original vmarea to l_area*/
-			l_area->vma_start = vmarea_start;
-			l_area->vma_end = lopage;
-			l_area->vma_flags = area->vma_flags;
-			l_area->vma_off = area->vma_off;
-			l_area->vma_obj = area->vma_obj;
-			l_area->vma_prot = area->vma_prot;
-			l_area->vma_vmmap = map;
-			vmmap_insert(map, l_area); /*that takes care of plink, and what do we do with olink*/
-			list_insert_before(&(area->vma_olink), &(l_area->vma_olink));
-			/*do the same for the r_area*/
-			r_area->vma_start = lopage_end;
-			r_area->vma_end = vmarea_end;
-			r_area->vma_flags = area->vma_flags;
-			r_area->vma_off = (area->vma_off) + (lopage_end - vmarea_start);
-			r_area->vma_obj = area->vma_obj;
-			r_area->vma_prot = area->vma_prot;
-			r_area->vma_vmmap = map;
-			vmmap_insert(map, r_area); /*that takes care of plink, and what do we do with olink*/
-			list_insert_before((&(area->vma_olink))->l_next, &(r_area->vma_olink));
-			/*increment the ref count on mmobj:*/
-			area->vma_obj->mmo_ops->ref(area->vma_obj);
-			/*remove and deallocate the old vmarea*/
-			list_remove(&area->vma_plink);
-			list_remove(&area->vma_olink);
-			vmarea_free(area);
-			return 0;
-		}
-	}list_iterate_end();
+	vmarea_t *area = vmmap_lookup(map, lopage);
+	if(!area) {
+		return -1;
+	}
+	uint32_t vmarea_start = area->vma_start;
+	uint32_t vmarea_end = area->vma_end;
+	uint32_t lopage_end = lopage + npages;
+	/*case 2:*/
+	if (vmarea_start < lopage && vmarea_end < lopage_end) {
+		area->vma_end = lopage_end;
+		return 0;
+	}
+	/*case 4*/
+	if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
+		list_remove(&area->vma_plink);
+		/*list_remove(&area->vma_olink);*/
+		vmarea_free(area);
+		return 0;
+	}
+	/*case 3*/
+	if (lopage < vmarea_start && lopage_end < vmarea_end) {
+		area->vma_start = lopage_end;
+		uint32_t old_offset = area->vma_off;
+		area->vma_off = old_offset + (lopage_end - vmarea_start);
+		return 0;
+	}
+	/*case 1*/
+	if (vmarea_start < lopage && lopage_end < vmarea_end) {
+		/*allocate 2 new vmareas instead of the old one*/
+		vmarea_t* l_area = vmarea_alloc(); /*area to the left of a removed region*/
+		vmarea_t *r_area = vmarea_alloc(); /*area to the right*/
+		/*copy stuff from original vmarea to l_area*/
+		l_area->vma_start = vmarea_start;
+		l_area->vma_end = lopage;
+		l_area->vma_flags = area->vma_flags;
+		l_area->vma_off = area->vma_off;
+		l_area->vma_obj = area->vma_obj;
+		l_area->vma_prot = area->vma_prot;
+		l_area->vma_vmmap = map;
+		vmmap_insert(map, l_area); /*that takes care of plink, and what do we do with olink*/
+		list_insert_before(&(area->vma_olink), &(l_area->vma_olink));
+		/*do the same for the r_area*/
+		r_area->vma_start = lopage_end;
+		r_area->vma_end = vmarea_end;
+		r_area->vma_flags = area->vma_flags;
+		r_area->vma_off = (area->vma_off) + (lopage_end - vmarea_start);
+		r_area->vma_obj = area->vma_obj;
+		r_area->vma_prot = area->vma_prot;
+		r_area->vma_vmmap = map;
+		vmmap_insert(map, r_area); /*that takes care of plink, and what do we do with olink*/
+		list_insert_before((&(area->vma_olink))->l_next, &(r_area->vma_olink));
+		/*increment the ref count on mmobj:*/
+		area->vma_obj->mmo_ops->ref(area->vma_obj);
+		/*remove and deallocate the old vmarea*/
+		list_remove(&area->vma_plink);
+		list_remove(&area->vma_olink);
+		vmarea_free(area);
+		return 0;
+	}
 	return -1;
 }
 
@@ -546,14 +550,14 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
 	vmarea_t *area = vmmap_lookup(map, startvfn);
 	if(area) {
-		int page_num = area->vma_obj->mmo_nrespages;
+		/* int page_num = area->vma_obj->mmo_nrespages;*/
 		int i = startvfn - (area->vma_start);
 		uint32_t num_free = 0;
-		if ((uint32_t) page_num < npages) {
+		/* if ((uint32_t) page_num < npages) {
 			return 1;
-		}
+		} */
 		pframe_t* pf;
-		for (; i < page_num; i++) {
+		for (; i < npages; i++) {
 			area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
 			if(pf) {
 				if (pframe_is_free(pf)) {
