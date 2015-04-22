@@ -260,6 +260,7 @@ proc_cleanup(int status)
 		vput(curproc->p_cwd);
 		dbg(DBG_PRINT, "(GRADING2B)\n");
 	}
+
 	/* iterate over all the child processes */
 	proc_t *p;
 	list_iterate_begin(&curproc->p_children, p, proc_t, p_child_link)
@@ -280,6 +281,10 @@ proc_cleanup(int status)
 	KASSERT(NULL != curproc->p_pproc); /* this process should have parent process */
 	dbg(DBG_PRINT, "(GRADING1A 2.b)\n");
 	dbg(DBG_PRINT, "INFO : finished cleaning up process %d\n", curproc->p_pid);
+
+	if(curproc->p_vmmap){
+		vmmap_destroy(curproc->p_vmmap);
+	}
 }
 
 /*
@@ -313,7 +318,7 @@ proc_kill(proc_t *p, int status)
 
 	dbg(DBG_PRINT, "INFO : executing proc_kill\n");
 	KASSERT(NULL != p); 	/* process should not be NULL */
-	KASSERT(PID_IDLE != p->p_pid && PID_IDLE != p->p_pproc->p_pid);
+	/*KASSERT(PID_IDLE != p->p_pid && PID_IDLE != p->p_pproc->p_pid);*/
 
 	if(curproc == p) {
 		dbg(DBG_PRINT, "(GRADING1C 9)\n");
