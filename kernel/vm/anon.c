@@ -121,14 +121,18 @@ anon_put(mmobj_t *o)
 	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-		    while(pframe_is_busy(page)) { /* if the object is busy wait for it */
-		    	sched_sleep_on(&(page->pf_waitq)); /* wait for it to become not busy*/
+		    while(pframe_is_busy(page)) {
+		    	sched_sleep_on(&(page->pf_waitq));
 		    }
-			pframe_unpin(page);
+			if(pframe_is_pinned(page)) {
+				pframe_unpin(page);
+			}
 			pframe_free(page); /* uncache all the pages */
 		}list_iterate_end();
 	}
-	slab_obj_free(anon_allocator, o); /* free the object */
+	if(o->mmo_refcount == o->mmo_nrespages && o->mmo_refcount == 0) {
+		slab_obj_free(anon_allocator, o); /* free the object */
+	}
 	return;
 }
 
@@ -164,7 +168,7 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
 	KASSERT(!pframe_is_pinned(pf));
 
 	/* get the page from the given frame */
-	pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
+	/*pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
 	if(page) {
 		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
 		if(!pframe_is_pinned(page)) {
@@ -172,7 +176,12 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
 		}
 		return 0;
 	}
-	return -1;
+	return -1; */
+	pframe_set_busy(pf);
+	pframe_pin(pf);
+	memset(pf->pf_addr, 0, PAGE_SIZE);
+	pframe_clear_busy(pf);
+	return 0;
 }
 
 static int
@@ -200,6 +209,7 @@ anon_cleanpage(mmobj_t *o, pframe_t *pf)
     */
 	KASSERT(o);
 	KASSERT(pf);
+	/*
 	pframe_t* page = NULL;
 	list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 		if(page->pf_pagenum == pf->pf_pagenum) {
@@ -208,4 +218,7 @@ anon_cleanpage(mmobj_t *o, pframe_t *pf)
 		}
 	}list_iterate_end();
 	return -1;
+	*/
+	pframe_clear_dirty(pf);
+	return 0;
 }
