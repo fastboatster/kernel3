@@ -388,6 +388,64 @@ static int vfs_test(kshell_t* kshell, int argc, char** argv){
 
 extern int faber_fs_thread_test(kshell_t *ksh, int argc, char **argv);
 extern int faber_directory_test(kshell_t *ksh, int argc, char **argv);
+
+static void *hello_helper() {
+	char* argv[] = { NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/hello", argv, envp);
+	return 0;
+}
+
+static int hello_test(kshell_t* kshell, int argc, char** argv){
+	proc_t *hello_proc = proc_create("hello_test");
+	KASSERT(NULL != hello_proc);
+	kthread_t *hello_thr = kthread_create(hello_proc, hello_helper, 1, NULL);
+	KASSERT(NULL != hello_thr);
+	sched_make_runnable(hello_thr);
+	while(do_waitpid(-1, 0, NULL) != -ECHILD);
+	return 0;
+}
+
+static void *uname_helper() {
+	do_open("/dev/tty0", O_RDONLY);
+	do_open("/dev/tty0", O_WRONLY);
+	char* argv[] = { "/bin/uname", "-a", NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/bin/uname", argv, envp);
+	return 0;
+}
+
+static int uname_test(kshell_t* kshell, int argc, char** argv){
+	proc_t *uname_proc = proc_create("uname_test");
+	KASSERT(NULL != uname_proc);
+	kthread_t *uname_thr = kthread_create(uname_proc, uname_helper, 1, NULL);
+	KASSERT(NULL != uname_thr);
+	sched_make_runnable(uname_thr);
+	while(do_waitpid(-1, 0, NULL) != -ECHILD);
+	return 0;
+}
+
+static void *args_helper() {
+	do_open("/dev/tty0", O_RDONLY);
+	do_open("/dev/tty0", O_WRONLY);
+	char* argv[] = { "/usr/bin/args", "ab", "cde", "fghi", NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/args", argv, envp);
+	return 0;
+}
+
+
+static int args_test(kshell_t* kshell, int argc, char** argv){
+	proc_t *args_proc = proc_create("uname_test");
+	KASSERT(NULL != args_proc);
+	kthread_t *args_thr = kthread_create(args_proc, args_helper, 1, NULL);
+	KASSERT(NULL != args_thr);
+	sched_make_runnable(args_thr);
+	while(do_waitpid(-1, 0, NULL) != -ECHILD);
+	return 0;
+}
+
+
 static void *
 initproc_run(int arg1, void *arg2)
 {
@@ -399,11 +457,23 @@ initproc_run(int arg1, void *arg2)
 
 	/* NOT_YET_IMPLEMENTED("PROCS: initproc_run");*/
 #ifdef __DRIVERS__
-	char* argv[] = { NULL };
+	/*char* argv[] = { NULL };
 	char* envp [] = { NULL };
-	kernel_execve("/usr/bin/hello", argv, envp);
+	kernel_execve("/usr/bin/hello", argv, envp);*/
+
+	/*do_open("/dev/tty0", O_RDONLY);
+	do_open("/dev/tty0", O_WRONLY);
+	char* argv[] = { "/bin/uname", "-a", NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/bin/uname", argv, envp);*/
 
 	/*
+	do_open("/dev/tty0", O_RDONLY);
+	do_open("/dev/tty0", O_WRONLY);
+	char* argv[] = { "/usr/bin/args", "ab", "cde", "fghi", NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/args", argv, envp); */
+
 	dbg(DBG_PRINT, "(GRADING1B)\n");
 
 	kshell_add_command("faber_test", my_faber_thread_test, "Run faber_thread_test()");
@@ -412,11 +482,14 @@ initproc_run(int arg1, void *arg2)
     kshell_add_command("vfstest",vfs_test, "Run vfs test");
     kshell_add_command("fs_thread_test",faber_fs_thread_test, "Run faber fs thread test.");
     kshell_add_command("directory_test",faber_directory_test, "Run faber directory test.");
+    kshell_add_command("hello", hello_test, "Run hello user program.");
+    kshell_add_command("uname", uname_test, "Run uname user program.");
+    kshell_add_command("args", args_test, "Run args user program.");
 	kshell_t *kshell = kshell_create(0);
     if (NULL == kshell) panic("init: Couldn't create kernel shell\n");
     while (kshell_execute_next(kshell));
     kshell_destroy(kshell);
-    */
+
 #else
     my_faber_thread_test(NULL, NULL, NULL);
     my_sunghan_test(NULL, NULL, NULL);
