@@ -126,12 +126,12 @@ anon_put(mmobj_t *o)
 		    }
 			if(pframe_is_pinned(page)) {
 				pframe_unpin(page);
+			} else if(pframe_is_dirty(page)){
+				pframe_clean(page);
+			} else {
+				pframe_free(page); /* uncache all the pages */
 			}
-			pframe_free(page); /* uncache all the pages */
 		}list_iterate_end();
-	}
-
-	if(o->mmo_refcount == o->mmo_nrespages && o->mmo_refcount == 0) {
 		slab_obj_free(anon_allocator, o); /* free the object */
 	}
 	return;
