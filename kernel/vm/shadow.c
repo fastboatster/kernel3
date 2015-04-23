@@ -128,7 +128,7 @@ shadow_put(mmobj_t *o)
     */
 	KASSERT(o && (0 < o->mmo_refcount) && (&shadow_mmobj_ops == o->mmo_ops));
 	dbg(DBG_PRINT, "(GRADING3A 6.c)\n");
-	o->mmo_ops->put(o);
+	o->mmo_refcount--;
 	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
