@@ -84,15 +84,17 @@ do_fork(struct regs *regs)
 		KASSERT(child->p_state == PROC_RUNNING);
 		dbg(DBG_PRINT, "(GRADING3A 7.a)\n");
 		int i;
-		for (i = 0;i < NFILES; i++){
+		for (i = 0;i < NFILES; i++) {
 			child->p_files[i] = parent->p_files[i];
-			fref(child->p_files[i]);
+			if(child->p_files[i]) { /* not all the file descriptors point to a file, some may be NULL */
+				fref(child->p_files[i]);
+			}
 		}
 		child->p_cwd = parent->p_cwd;
-		vref(child->p_cwd);
+		vref(child->p_cwd); /* parent is always associated with CWD */
 
 		/*I dont know whether or not to do these things??*/
-		child->p_pagedir = parent->p_pagedir;
+		memcpy(child->p_pagedir, parent->p_pagedir, sizeof(pagedir_t));
 		KASSERT(child->p_pagedir != NULL);
 		dbg(DBG_PRINT, "(GRADING3A 7.a)\n");
 		child->p_brk = parent->p_brk;
@@ -100,46 +102,73 @@ do_fork(struct regs *regs)
 
 		/*Clone the vmmap and adju0st the shadow objects*/
 		child->p_vmmap = vmmap_clone(parent->p_vmmap);
+		if(!child->p_vmmap) {
+			proc_kill(child, -1);
+			return -1;
+		}
 		vmarea_t *p_area, *c_area;
-		list_link_t *link = &(child->p_vmmap->vmm_list);
+		list_link_t *link = (&child->p_vmmap->vmm_list)->l_next;
 		list_iterate_begin(&(parent->p_vmmap->vmm_list), p_area, vmarea_t, vma_plink){
+			c_area = list_item(link , vmarea_t, vma_plink);
+			if((p_area->vma_flags & MAP_PRIVATE)) { /*Private Obj*/
+				/* create a shadow object for parent and adjust the pointers */
+				mmobj_t *p_old_mmobj = p_area->vma_obj;
+				mmobj_t *p_shadow_obj = shadow_create();
+				if(!p_shadow_obj) {
+					proc_kill(child, -1);
+					return -1;
+				}
+				p_area->vma_obj = p_shadow_obj;
+				p_shadow_obj->mmo_shadowed = p_old_mmobj;
 
-			if (p_area->vma_flags & MAP_SHARED){ /*Shared object*/
-				c_area = list_item(link , vmarea_t, vma_plink);
-				c_area->vma_obj = p_area->vma_obj;
-				p_area->vma_obj->mmo_ops->ref(p_area->vma_obj);
-			}
-			else{/*Private Obj*/
-				mmobj_t *p_old_mmobj=p_area->vma_obj;
-				mmobj_t *p_shadow_obj=shadow_create();
-				p_area->vma_obj=p_shadow_obj;
-				p_shadow_obj->mmo_shadowed=p_old_mmobj;
-				mmobj_t *c_shadow_obj=shadow_create();
-				c_area->vma_obj=c_shadow_obj;
-				c_shadow_obj->mmo_shadowed=p_old_mmobj;
+				/* create a shadow object for child and adjust the pointers */
+				mmobj_t *c_shadow_obj = shadow_create();
+				if(!p_shadow_obj) {
+					proc_kill(child, -1);
+					return -1;
+				}
+				c_area->vma_obj = c_shadow_obj;
+				c_shadow_obj->mmo_shadowed = p_old_mmobj;
 				p_old_mmobj->mmo_ops->ref(p_old_mmobj);
-
-
-
+			}else{
+				/*Shared object or default*/
+				c_area->vma_obj = p_area->vma_obj;
+				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
 			}
 			link = link->l_next;
 
 		}list_iterate_end();
 		/*need to clone the thread, set up the stack, return appropriate value, change eax register, make runnable*/
-		kthread_t * child_thr=kthread_clone(parent_thr);
+		kthread_t * child_thr = kthread_clone(parent_thr);
+		if(!child_thr) {
+			proc_kill(child, -1);
+			return -1;
+		}
 		KASSERT(child_thr->kt_kstack != NULL);
-		pt_unmap_range(parent->p_pagedir, 0, 0);
+		pt_unmap_range(parent->p_pagedir, USER_MEM_LOW, USER_MEM_HIGH);
 		tlb_flush_all();
 
-		child_thr->kt_ctx.c_pdptr=parent_thr->kt_ctx.c_pdptr;
-		child_thr->kt_ctx.c_kstack=parent_thr->kt_ctx.c_kstack;
-		child_thr->kt_ctx.c_kstacksz=parent_thr->kt_ctx.c_kstacksz;
-		child_thr->kt_ctx.c_esp=fork_setup_stack((const regs_t*)regs, (void *)child_thr->kt_kstack);
-		child_thr->kt_ctx.c_eip=(uint32_t)userland_entry;
-		regs->r_eax=NULL;
+		/* copy page table pointer */
+		child_thr->kt_ctx.c_pdptr = parent_thr->kt_ctx.c_pdptr;
+		/* ??? */
+		child_thr->kt_ctx.c_kstack = parent_thr->kt_ctx.c_kstack;
+		/* set the size for new thread kernel stack */
+		child_thr->kt_ctx.c_kstacksz = parent_thr->kt_ctx.c_kstacksz;
+		/* set ESP */
+		child_thr->kt_ctx.c_esp = fork_setup_stack((const regs_t*)regs, (void *)child_thr->kt_kstack);
+		/* set EIP */
+		child_thr->kt_ctx.c_eip = (uintptr_t)userland_entry;
+
+		/* make the child thread runnable */
 		sched_make_runnable(child_thr);
-		if (curthr==child_thr)
+		if (curthr == child_thr) {
+			/* set return val */
+			regs->r_eax = 0;
 			return 0;
-		else
-			return child->p_pid;
+		}
+		else {
+			/* set return val */
+			regs->r_eax = child->p_pid;
+			return regs->r_eax;
+		}
 }
