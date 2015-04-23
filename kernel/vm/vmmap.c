@@ -381,8 +381,8 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 				vmarea_free(new_area);
 				return -1;
 			}
-			list_insert_tail(&(new_mmobj->mmo_un.mmo_vmas), &(new_area->vma_olink));
 		}
+		list_insert_tail(mmobj_bottom_vmas(new_mmobj), &(new_area->vma_olink));
 
 		if(flags & MAP_PRIVATE) { /* shadow object */
 			mmobj_t *new_shadow_obj = NULL;
@@ -390,6 +390,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 			   new_shadow_obj->mmo_shadowed = new_mmobj;
 			   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
 			   new_area->vma_obj = new_shadow_obj;
+			   /*list_insert_tail(mmobj_bottom_vmas(new_shadow_obj), &(new_area->vma_olink));*/
 			} else {
 				new_mmobj->mmo_ops->put(new_mmobj); /*decrement the ref count of the mmobj */
 				vmarea_free(new_area); /* free the VM area */
@@ -429,8 +430,8 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 				vmarea_free(new_area);
 				return -1;
 			}
-			list_insert_tail(&(new_mmobj->mmo_un.mmo_vmas), &(new_area->vma_olink));
 		}
+		list_insert_tail(mmobj_bottom_vmas(new_mmobj), &(new_area->vma_olink));
 
 		if(flags & MAP_PRIVATE) { /* shadow object */
 			mmobj_t *new_shadow_obj = NULL;
@@ -438,6 +439,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 			   new_shadow_obj->mmo_shadowed = new_mmobj;
 			   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
 			   new_area->vma_obj = new_shadow_obj;
+			   /*list_insert_tail(mmobj_bottom_vmas(new_shadow_obj), &(new_area->vma_olink));*/
 			} else {
 				new_mmobj->mmo_ops->put(new_mmobj); /*decrement the ref count of the mmobj */
 				vmarea_free(new_area); /* free the VM area */
@@ -502,7 +504,7 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	/*case 4*/
 	if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
 		list_remove(&area->vma_plink);
-		/*list_remove(&area->vma_olink);*/
+		list_remove(&area->vma_olink);
 		vmarea_free(area);
 		return 0;
 	}
