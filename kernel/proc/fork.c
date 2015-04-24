@@ -87,7 +87,7 @@ do_fork(struct regs *regs)
 		vref(child->p_cwd); /* parent is always associated with CWD */
 
 		/*I dont know whether or not to do these things??*/
-		memcpy(child->p_pagedir, parent->p_pagedir, sizeof(child->p_pagedir));
+		/*memcpy(child->p_pagedir, parent->p_pagedir, sizeof(child->p_pagedir));*/
 		/*child->p_pagedir = parent->p_pagedir;*/
 		KASSERT(child->p_pagedir != NULL);
 		dbg(DBG_PRINT, "(GRADING3A 7.a)\n");
@@ -105,7 +105,10 @@ do_fork(struct regs *regs)
 		}
 
 		vmarea_t *p_area = NULL;
+		vmarea_t *c_area = NULL;
+		list_link_t *link = (&child->p_vmmap->vmm_list)->l_next;
 		list_iterate_begin(&(parent->p_vmmap->vmm_list), p_area, vmarea_t, vma_plink){
+			c_area = list_item(link , vmarea_t, vma_plink);
 			if((p_area->vma_flags & MAP_PRIVATE)) { /*Private Obj*/
 				/* create a shadow object for parent and adjust the pointers */
 				mmobj_t *p_old_mmobj = p_area->vma_obj;
@@ -118,14 +121,10 @@ do_fork(struct regs *regs)
 					vmmap_destroy(child->p_vmmap);
 					return -1;
 				}
-				p_area->vma_obj = p_old_mmobj;
-			}
-		}list_iterate_end();
+				p_shadow_obj = p_old_mmobj;
+				p_area->vma_obj = p_shadow_obj;
 
-		vmarea_t *c_area = NULL;
-		list_iterate_begin(&(child->p_vmmap->vmm_list), c_area, vmarea_t, vma_plink){
-			if((c_area->vma_flags & MAP_PRIVATE)) { /*Private Obj*/
-				/* create a shadow object for parent and adjust the pointers */
+
 				mmobj_t *c_old_mmobj = c_area->vma_obj;
 				mmobj_t *c_shadow_obj = shadow_create();
 				if(!c_shadow_obj) {
@@ -136,9 +135,33 @@ do_fork(struct regs *regs)
 					vmmap_destroy(child->p_vmmap);
 					return -1;
 				}
-				c_area->vma_obj = c_old_mmobj;
+				c_shadow_obj = p_old_mmobj;
+				c_area->vma_obj = c_shadow_obj;
+				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
+			}
+			link = link->l_next;
+		}list_iterate_end();
+
+		/*
+		list_iterate_begin(&(child->p_vmmap->vmm_list), c_area, vmarea_t, vma_plink){
+			if((c_area->vma_flags & MAP_PRIVATE)) {
+				mmobj_t *c_old_mmobj = c_area->vma_obj;
+				mmobj_t *c_shadow_obj = shadow_create();
+				if(!c_shadow_obj) {
+					pt_destroy_pagedir(child->p_pagedir);
+					list_remove(&(child->p_list_link));
+					list_remove(&(child->p_child_link));
+					vput(child->p_cwd);
+					vmmap_destroy(child->p_vmmap);
+					return -1;
+				}
+				c_shadow_obj = c_old_mmobj;
+				c_area->vma_obj = c_shadow_obj;
 			}
 		}list_iterate_end();
+*/
+		pt_unmap_range(parent->p_pagedir, USER_MEM_LOW, USER_MEM_HIGH);
+		tlb_flush_all();
 
 		/*need to clone the thread, set up the stack, return appropriate value, change eax register, make runnable*/
 		kthread_t * child_thr = kthread_clone(parent_thr);
@@ -152,19 +175,19 @@ do_fork(struct regs *regs)
 		}
 		list_insert_tail(&(child->p_threads), &(child_thr->kt_plink));
 		KASSERT(child_thr->kt_kstack != NULL);
-		tlb_flush_all();
-		pt_unmap_range(parent->p_pagedir, USER_MEM_LOW, USER_MEM_HIGH);
+		child_thr->kt_proc = child;
 
 		/* copy page table pointer */
 		child_thr->kt_ctx.c_pdptr = child->p_pagedir;
-		/* ??? */
 		child_thr->kt_ctx.c_kstack = (uintptr_t)child_thr->kt_kstack;
 		/* set the size for new thread kernel stack */
-		child_thr->kt_ctx.c_kstacksz = parent_thr->kt_ctx.c_kstacksz;
+		child_thr->kt_ctx.c_kstacksz = /*parent_thr->kt_ctx.c_kstacksz*/ DEFAULT_STACK_SIZE;
+		/* set return val for the child process */
+		regs->r_eax = 0;
 		/* set ESP */
 		child_thr->kt_ctx.c_esp = fork_setup_stack((const regs_t*)regs, (void *)child_thr->kt_kstack);
 		/* set EIP */
-		child_thr->kt_ctx.c_eip = (uintptr_t)userland_entry;
+		child_thr->kt_ctx.c_eip = (uint32_t)userland_entry;
 
 		int i;
 		for (i = 0;i < NFILES; i++) {
@@ -175,7 +198,5 @@ do_fork(struct regs *regs)
 		}
 		/* make the child thread runnable */
 		sched_make_runnable(child_thr);
-		/* set return val */
-		regs->r_eax = child->p_pid;
 		return child->p_pid;
 }
