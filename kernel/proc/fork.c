@@ -124,7 +124,6 @@ do_fork(struct regs *regs)
 				p_shadow_obj = p_old_mmobj;
 				p_area->vma_obj = p_shadow_obj;
 
-
 				mmobj_t *c_old_mmobj = c_area->vma_obj;
 				mmobj_t *c_shadow_obj = shadow_create();
 				if(!c_shadow_obj) {
@@ -137,7 +136,8 @@ do_fork(struct regs *regs)
 				}
 				c_shadow_obj = p_old_mmobj;
 				c_area->vma_obj = c_shadow_obj;
-				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
+				p_old_mmobj->mmo_refcount++;
+				/*c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);*/
 			}
 			link = link->l_next;
 		}list_iterate_end();
