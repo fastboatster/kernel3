@@ -135,15 +135,20 @@ void vmmap_destroy(vmmap_t *map) {
 	for (; link != &(map->vmm_list); link = link->l_next) {*/
 	vmarea_t* area = NULL;
 	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
+		area->vma_obj->mmo_ops->put(area->vma_obj);
+
+		/*
 		if(area->vma_obj->mmo_un.mmo_bottom_obj != NULL) {
 			vnode_t *v = CONTAINER_OF((area->vma_obj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
 			if(v->vn_nrespages < v->vn_refcount){
 				vput(v);
 			}
 		}
-		area->vma_obj->mmo_ops->put(area->vma_obj); /* decrement the reference */
+		area->vma_obj->mmo_ops->put(area->vma_obj);
+		*/
+
 		list_remove(&area->vma_plink);
-		list_remove(&area->vma_olink);
+		/*list_remove(&area->vma_olink);*/
 		vmarea_free(area);
 	}list_iterate_end();
 	map->vmm_proc = NULL;
@@ -305,6 +310,8 @@ vmmap_clone(vmmap_t *map) {
 		new_area->vma_prot = area->vma_prot;
 		new_area->vma_flags = area->vma_flags;
 		/* list_insert_tail(&(new_map->vmm_list), &(new_area->vma_plink)); */ /* not sure of this */
+		list_link_init(&new_area->vma_olink);
+		list_link_init(&new_area->vma_plink);
 		vmmap_insert(new_map, new_area);
 	}list_iterate_end();
 	return new_map;
