@@ -138,6 +138,9 @@ do_fork(struct regs *regs)
 				c_area->vma_obj = c_shadow_obj;
 				p_old_mmobj->mmo_refcount++;
 				/*c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);*/
+			} else{
+				c_area->vma_obj = p_area->vma_obj;
+				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
 			}
 			link = link->l_next;
 		}list_iterate_end();
@@ -185,9 +188,10 @@ do_fork(struct regs *regs)
 		/* set return val for the child process */
 		regs->r_eax = 0;
 		/* set ESP */
+		child_thr->kt_ctx.c_eip = (uint32_t)userland_entry;
 		child_thr->kt_ctx.c_esp = fork_setup_stack((const regs_t*)regs, (void *)child_thr->kt_kstack);
 		/* set EIP */
-		child_thr->kt_ctx.c_eip = (uint32_t)userland_entry;
+
 
 		int i;
 		for (i = 0;i < NFILES; i++) {
