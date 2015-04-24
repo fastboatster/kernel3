@@ -135,11 +135,16 @@ shadow_put(mmobj_t *o)
 		    while(pframe_is_busy(page)) { /* if the object is busy wait for it */
 		    	sched_sleep_on(&(page->pf_waitq)); /* wait for it to become not busy*/
 		    }
-			pframe_unpin(page);
-			pframe_free(page); /* uncache all the pages */
+			if(pframe_is_pinned(page)) {
+				pframe_unpin(page);
+			} else if(pframe_is_dirty(page)){
+				pframe_clean(page);
+			} else {
+				pframe_free(page); /* uncache all the pages */
+			}
 		}list_iterate_end();
+		slab_obj_free(shadow_allocator, o); /* free the object */
 	}
-	slab_obj_free(shadow_allocator, o); /* free the object */
 	return;
 }
 
@@ -219,15 +224,17 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 
 	pframe_t* page = NULL;
 	mmobj_t *temp = o;
-	while(temp) {
-		list_iterate_begin(&temp->mmo_respages, page, pframe_t, pf_olink) {
-			if(page->pf_pagenum == pf->pf_pagenum) {
-				pframe_set_dirty(pf);/* dirty the page */
-				memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
-				return 0;
-			}
-		}list_iterate_end();
-		temp = temp->mmo_shadowed; /*what does this do???*/
+	int found_page = shadow_lookuppage(temp, pf->pf_pagenum, 0, &page);
+	if(found_page < 0) {
+		return -1;
+	}
+	pframe_set_dirty(pf);
+	if(page) {
+		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
+		return 0;
+	}else{
+		pframe_clear_dirty(pf);
+		return -1;
 	}
 	return -1;
 }
@@ -243,8 +250,6 @@ shadow_dirtypage(mmobj_t *o, pframe_t *pf)
     */
 	if(!pframe_is_dirty(pf)) {
 		pframe_set_dirty(pf);
-	}
-	if(pframe_is_dirty(pf)) {
 		return 0;
 	}
 	return -1;
@@ -257,17 +262,22 @@ shadow_cleanpage(mmobj_t *o, pframe_t *pf)
         NOT_YET_IMPLEMENTED("VM: shadow_cleanpage");
         return -1;
     */
-	pframe_t* page = NULL;
+	pframe_t* page = NULL; /* probably this is the destination page */
 	mmobj_t *temp = o;
-	while(temp) {
-		list_iterate_begin(&temp->mmo_respages, page, pframe_t, pf_olink) {
-			if(page->pf_pagenum == pf->pf_pagenum) {
-			    /* clean the page */
-				pframe_clean(pf);
-		        return 0;
-			}
-		}list_iterate_end();
-		temp = temp->mmo_shadowed;
+	int found_page = shadow_lookuppage(temp, pf->pf_pagenum, 0, &page);
+	if(found_page < 0) {
+		return -1;
+	}
+	if(page) {
+		while(pframe_is_busy(pf)){ /* wait for it to become free */
+			sched_broadcast_on(&pf->pf_waitq);
+		}
+		if(pframe_is_pinned(pf)){
+			pframe_unpin(pf);
+			memcpy(page->pf_addr, pf->pf_addr, PAGE_SIZE);
+			pframe_free(pf);
+			return 0;
+		}
 	}
 	return -1;
 }
