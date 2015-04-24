@@ -215,7 +215,7 @@ kthread_clone(kthread_t *thr)
 		KASSERT(new_thr->kt_kstack);
 
 		proc_t * p = thr->kt_proc;
-		new_thr->kt_proc = p; /* set the parent process to the process passed to the function */
+		new_thr->kt_proc = p; /* ???? set the parent process to the process passed to the function */
 		new_thr->kt_cancelled = 0;
 		new_thr->kt_state  = thr->kt_state;
 		/*initialize pointer to kt_wchan to NULL:*/
@@ -224,7 +224,7 @@ kthread_clone(kthread_t *thr)
 		/* insert the thread into the list of all the threads in the process p:*/
 		list_link_init(&(new_thr->kt_plink)); /* init the link in the new_thr */
 		list_link_init(&(new_thr->kt_qlink)); /*init a qlink*/
-		list_insert_tail(&(p->p_threads), &(new_thr->kt_plink)); /* into the p_children list in process p */
+	/*	list_insert_tail(&(p->p_threads), &(new_thr->kt_plink)); *//* into the p_children list in process p ??? why, it should be in a new process and we can't have more than 1 thread in a process */
 		return new_thr;
 }
 

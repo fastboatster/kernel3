@@ -94,13 +94,14 @@ do_fork(struct regs *regs)
 		vref(child->p_cwd); /* parent is always associated with CWD */
 
 		/*I dont know whether or not to do these things??*/
-		memcpy(child->p_pagedir, parent->p_pagedir, sizeof(pagedir_t));
+		/*memcpy(child->p_pagedir, parent->p_pagedir, sizeof(pagedir_t));*/
+		child->p_pagedir = parent->p_pagedir;
 		KASSERT(child->p_pagedir != NULL);
 		dbg(DBG_PRINT, "(GRADING3A 7.a)\n");
 		child->p_brk = parent->p_brk;
 		child->p_start_brk = parent->p_start_brk;
 
-		/*Clone the vmmap and adju0st the shadow objects*/
+		/*Clone the vmmap and adjust the shadow objects*/
 		child->p_vmmap = vmmap_clone(parent->p_vmmap);
 		if(!child->p_vmmap) {
 			proc_kill(child, -1);
@@ -113,20 +114,23 @@ do_fork(struct regs *regs)
 			if((p_area->vma_flags & MAP_PRIVATE)) { /*Private Obj*/
 				/* create a shadow object for parent and adjust the pointers */
 				mmobj_t *p_old_mmobj = p_area->vma_obj;
+				int respages = p_old_mmobj->mmo_nrespages;
 				mmobj_t *p_shadow_obj = shadow_create();
 				if(!p_shadow_obj) {
 					proc_kill(child, -1);
 					return -1;
 				}
+				p_shadow_obj->mmo_nrespages = respages;
 				p_area->vma_obj = p_shadow_obj;
 				p_shadow_obj->mmo_shadowed = p_old_mmobj;
 
 				/* create a shadow object for child and adjust the pointers */
 				mmobj_t *c_shadow_obj = shadow_create();
-				if(!p_shadow_obj) {
+				if(!c_shadow_obj) {
 					proc_kill(child, -1);
 					return -1;
 				}
+				c_shadow_obj->mmo_nrespages = respages;
 				c_area->vma_obj = c_shadow_obj;
 				c_shadow_obj->mmo_shadowed = p_old_mmobj;
 				p_old_mmobj->mmo_ops->ref(p_old_mmobj);
@@ -134,6 +138,7 @@ do_fork(struct regs *regs)
 				/*Shared object or default*/
 				c_area->vma_obj = p_area->vma_obj;
 				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
+
 			}
 			link = link->l_next;
 
@@ -144,14 +149,15 @@ do_fork(struct regs *regs)
 			proc_kill(child, -1);
 			return -1;
 		}
+		list_insert_tail(&(child->p_threads), &(child_thr->kt_plink));
 		KASSERT(child_thr->kt_kstack != NULL);
 		pt_unmap_range(parent->p_pagedir, USER_MEM_LOW, USER_MEM_HIGH);
 		tlb_flush_all();
 
 		/* copy page table pointer */
-		child_thr->kt_ctx.c_pdptr = parent_thr->kt_ctx.c_pdptr;
+		child_thr->kt_ctx.c_pdptr = child->p_pagedir;
 		/* ??? */
-		child_thr->kt_ctx.c_kstack = parent_thr->kt_ctx.c_kstack;
+		child_thr->kt_ctx.c_kstack = child_thr->kt_kstack;
 		/* set the size for new thread kernel stack */
 		child_thr->kt_ctx.c_kstacksz = parent_thr->kt_ctx.c_kstacksz;
 		/* set ESP */
