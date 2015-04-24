@@ -216,11 +216,12 @@ kthread_clone(kthread_t *thr)
 
 		proc_t * p = thr->kt_proc;
 		new_thr->kt_proc = p; /* ???? set the parent process to the process passed to the function */
-		new_thr->kt_cancelled = 0;
-		new_thr->kt_state  = thr->kt_state;
+		new_thr->kt_cancelled = thr->kt_cancelled;
+		new_thr->kt_state  = KT_RUN;
 		/*initialize pointer to kt_wchan to NULL:*/
-		new_thr->kt_wchan = thr->kt_wchan; /*I dont know where it should be*/
-		context_setup(&(new_thr->kt_ctx), NULL, NULL, NULL, new_thr->kt_kstack, DEFAULT_STACK_SIZE, p->p_pagedir);
+		new_thr->kt_wchan = NULL; /*I dont know where it should be*/
+
+/*		context_setup(&(new_thr->kt_ctx), NULL, NULL, NULL, new_thr->kt_kstack, DEFAULT_STACK_SIZE, p->p_pagedir);*/
 		/* insert the thread into the list of all the threads in the process p:*/
 		list_link_init(&(new_thr->kt_plink)); /* init the link in the new_thr */
 		list_link_init(&(new_thr->kt_qlink)); /*init a qlink*/
