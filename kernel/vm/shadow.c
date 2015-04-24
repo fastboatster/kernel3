@@ -218,15 +218,16 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	dbg(DBG_PRINT, "(GRADING3A 6.d)\n");
 
 	pframe_t* page = NULL;
-	while(o) {
-		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+	mmobj_t *temp = o;
+	while(temp) {
+		list_iterate_begin(&temp->mmo_respages, page, pframe_t, pf_olink) {
 			if(page->pf_pagenum == pf->pf_pagenum) {
 				pframe_set_dirty(pf);/* dirty the page */
 				memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
 				return 0;
 			}
 		}list_iterate_end();
-		o = o->mmo_shadowed;
+		temp = temp->mmo_shadowed; /*what does this do???*/
 	}
 	return -1;
 }
@@ -257,15 +258,16 @@ shadow_cleanpage(mmobj_t *o, pframe_t *pf)
         return -1;
     */
 	pframe_t* page = NULL;
-	while(o) {
-		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+	mmobj_t *temp = o;
+	while(temp) {
+		list_iterate_begin(&temp->mmo_respages, page, pframe_t, pf_olink) {
 			if(page->pf_pagenum == pf->pf_pagenum) {
 			    /* clean the page */
 				pframe_clean(pf);
 		        return 0;
 			}
 		}list_iterate_end();
-		o = o->mmo_shadowed;
+		temp = temp->mmo_shadowed;
 	}
 	return -1;
 }
