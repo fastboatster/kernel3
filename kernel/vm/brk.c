@@ -92,7 +92,7 @@ do_brk(void *addr, void **ret)
 	uint32_t end_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(addr));
 	uint32_t start_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(curproc->p_brk));
 
-	/*Check if the range is empty*/
+	/*Check iff the range is empty*/
 	int range_ret = vmmap_is_range_empty(curproc->p_vmmap, start_vfn, start_vfn-end_vfn);
 	if (range_ret){
 		curproc->p_brk = addr;
@@ -105,6 +105,7 @@ do_brk(void *addr, void **ret)
 		new_area->vma_end = area->vma_start;
 		ret = &curproc->p_brk;
 	}
+	*ret = NULL;
 	return 0;
 
 }
