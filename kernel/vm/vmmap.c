@@ -365,6 +365,13 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 	new_area->vma_flags = flags;
 	new_area->vma_prot = prot;
 
+	if(!new){
+		new  = vmarea_alloc();
+		if(!new) {
+			return -1;
+		}
+	}
+
 	mmobj_t *new_mmobj = NULL;
 	if(!lopage) { /* lopage == 0 */
 		int start_vfn = vmmap_find_range(map, npages, dir);
@@ -603,7 +610,8 @@ int vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count) {
 		uintptr_t offset = PAGE_OFFSET(addr);/*(addr << 20) >> 20;*//*get the offset in the physical page*/
 		size_t rem_count = count;
 		while (rem_count > 0) {
-			int result = pframe_get(memobj, pagenum, &pg_frame);
+			int result = memobj->mmo_ops->lookuppage(memobj, pagenum, 0, &pg_frame);
+			/*int result = pframe_get(memobj, pagenum, &pg_frame);*/
 			if (result < 0) {
 				return result;
 			};
@@ -643,7 +651,8 @@ int vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count) {
 	uintptr_t offset = PAGE_OFFSET(addr);/*(addr << 20) >> 20;*//*get the offset in the physical page*/
 	size_t rem_count = count;
 	while (rem_count > 0) {
-		int result = pframe_get(memobj, pagenum, &pg_frame);
+		int result = memobj->mmo_ops->lookuppage(memobj, pagenum, 0, &pg_frame);
+		/*int result = pframe_get(memobj, pagenum, &pg_frame); */
 		if (result < 0) {
 			return result;
 		};
