@@ -97,11 +97,15 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 			proc_kill(curproc, EFAULT);
 			return;
 		} else { /* not sure what to do with FAULT_USER/ FAULT_PRESENT */
+			int for_write = 0;
+			if (cause & FAULT_WRITE) {
+				for_write = 1;
+			}
 			/*pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result) */
 			pframe_t *new_frame = NULL;
 			uint32_t pagenum = (vaddr_vfn - vmarea->vma_start)/* + vmarea->vma_off*/;
 			/*if(pframe_get(vmarea->vma_obj, pagenum, &new_frame) >= 0) {*/
-			if(vmarea->vma_obj->mmo_ops->lookuppage(vmarea->vma_obj, pagenum, 0, &new_frame) >=0) {
+			if(vmarea->vma_obj->mmo_ops->lookuppage(vmarea->vma_obj, pagenum, for_write, &new_frame) >=0) {
 				pframe_clear_busy(new_frame);
 				uintptr_t paddr = pt_virt_to_phys((uintptr_t)new_frame->pf_addr); /* gives the physical address */
 				dbg(DBG_PRINT, "Page Align down = %d, normal conversion = %d\n",(uintptr_t)PAGE_ALIGN_DOWN(vaddr), (uintptr_t)PN_TO_ADDR(ADDR_TO_PN(vaddr)));

@@ -223,7 +223,7 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	dbg(DBG_PRINT, "(GRADING3A 6.d)\n");
 
 	pframe_t* page = NULL;
-	mmobj_t *temp = o;
+	mmobj_t *temp = o->mmo_shadowed;
 	if(temp->mmo_shadowed) { /* shadowed object */
 		while(temp->mmo_shadowed) {
 			page = pframe_get_resident(temp, pf->pf_pagenum);

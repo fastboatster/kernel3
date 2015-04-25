@@ -451,10 +451,10 @@ initproc_run(int arg1, void *arg2)
 {
 	dbg(DBG_PRINT, "INFO : executing initproc_run\n");
 	dbg(DBG_PRINT, "(GRADING1A)\n");
-	/*char* argv[] = { NULL };
+/*	char* argv[] = { NULL };
 	char* envp [] = { NULL };
-	kernel_execve("/usr/bin/hello", argv, envp);*/
-
+	kernel_execve("/usr/bin/hello", argv, envp);
+*/
 	/* NOT_YET_IMPLEMENTED("PROCS: initproc_run");*/
 #ifdef __DRIVERS__
 	char* argv[] = { NULL };
