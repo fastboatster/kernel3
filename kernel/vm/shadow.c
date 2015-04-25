@@ -224,20 +224,19 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 
 	pframe_t* page = NULL;
 	mmobj_t *temp = o;
-	while(NULL != temp->mmo_un.mmo_bottom_obj) {
-		page = pframe_get_resident(temp, pf->pf_pagenum);
-		if(page) {
-			break;
+	if(temp->mmo_shadowed) { /* shadowed object */
+		while(temp->mmo_shadowed) {
+			page = pframe_get_resident(temp, pf->pf_pagenum);
+			if(page) {
+				break;
+			}
+			temp = temp->mmo_shadowed;
 		}
-		temp = temp->mmo_shadowed;
 	}
 	/* page not found from shadow objects */
 	/* lookup the page, not temp is the bottom most object */
 	if(!page) { /* look for a page in the bottom object */
-		int found_page = shadow_lookuppage(temp, pf->pf_pagenum, 1, &page);
-		if(found_page < 0) {
-			return -1;
-		}
+		page = pframe_get_resident(temp, pf->pf_pagenum);
 	}
 	if(page) {
 		pframe_set_dirty(pf);
