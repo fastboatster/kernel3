@@ -136,8 +136,15 @@ fail:
 int
 addr_perm(struct proc *p, const void *vaddr, int perm)
 {
-        NOT_YET_IMPLEMENTED("VM: addr_perm");
-        return 0;
+    vmmap_t* map = p->p_vmmap;
+
+    uint32_t vfn = ADDR_TO_PN((uint32_t)vaddr);
+    vmarea_t *area = vmmap_lookup(map, vfn);
+    int area_perm = area->vma_prot;
+    if (area_perm & perm) {
+   	 return 1;
+    }
+    return 0;
 }
 
 /*
@@ -152,6 +159,17 @@ addr_perm(struct proc *p, const void *vaddr, int perm)
 int
 range_perm(struct proc *p, const void *avaddr, size_t len, int perm)
 {
-        NOT_YET_IMPLEMENTED("VM: range_perm");
-        return 0;
+    /* NOT_YET_IMPLEMENTED("VM: range_perm");*/
+	uint32_t start_addr = (uint32_t)avaddr ;
+	uint32_t end_addr = start_addr + len;
+
+	/* check from start page till end page */
+	while(start_addr < end_addr) {
+		if(addr_perm(p, (void *)start_addr, perm) == 0){
+			return 0;
+		}
+		start_addr+=PAGE_SIZE;
+	}
+
+  return 1;
 }

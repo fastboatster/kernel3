@@ -204,8 +204,26 @@ kthread_exit(void *retval)
 kthread_t *
 kthread_clone(kthread_t *thr)
 {
-        NOT_YET_IMPLEMENTED("VM: kthread_clone");
-        return NULL;
+        /*NOT_YET_IMPLEMENTED("VM: kthread_clone");
+        return NULL;*/
+		KASSERT(thr);
+		kthread_t *new_thr = (kthread_t*)slab_obj_alloc(kthread_allocator);
+		KASSERT(new_thr);
+		/* allocate the new stack: */
+		new_thr->kt_kstack = alloc_stack();
+		KASSERT(new_thr->kt_kstack);
+
+		proc_t * p = thr->kt_proc;
+		new_thr->kt_proc = p; /* set the parent process to the process passed to the function */
+		new_thr->kt_cancelled = 0;
+		new_thr->kt_state  = thr->kt_state;
+		/*initialize pointer to kt_wchan to NULL:*/
+		new_thr->kt_wchan = thr->kt_wchan; /*I dont know where it should be*/
+		/* insert the thread into the list of all the threads in the process p:*/
+		list_link_init(&(new_thr->kt_plink)); /* init the link in the new_thr */
+		list_link_init(&(new_thr->kt_qlink)); /*init a qlink*/
+		list_insert_tail(&(p->p_threads), &(new_thr->kt_plink)); /* into the p_children list in process p */
+		return new_thr;
 }
 
 /*

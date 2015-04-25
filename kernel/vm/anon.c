@@ -77,6 +77,7 @@ anon_create()
 	if(new_anon_obj) {
 		mmobj_init(new_anon_obj, &anon_mmobj_ops); /* initialize the object */
 		/*anon_ref(new_anon_obj);*/
+		new_anon_obj->mmo_un.mmo_bottom_obj = NULL;
 		new_anon_obj->mmo_refcount++; /*do we need this at all?*/
 	};
 	return new_anon_obj;
