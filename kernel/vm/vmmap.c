@@ -135,15 +135,20 @@ void vmmap_destroy(vmmap_t *map) {
 	for (; link != &(map->vmm_list); link = link->l_next) {*/
 	vmarea_t* area = NULL;
 	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
+		area->vma_obj->mmo_ops->put(area->vma_obj);
+
+		/*
 		if(area->vma_obj->mmo_un.mmo_bottom_obj != NULL) {
 			vnode_t *v = CONTAINER_OF((area->vma_obj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
 			if(v->vn_nrespages < v->vn_refcount){
 				vput(v);
 			}
 		}
-		area->vma_obj->mmo_ops->put(area->vma_obj); /* decrement the reference */
+		area->vma_obj->mmo_ops->put(area->vma_obj);
+		*/
+
 		list_remove(&area->vma_plink);
-		list_remove(&area->vma_olink);
+		/*list_remove(&area->vma_olink);*/
 		vmarea_free(area);
 	}list_iterate_end();
 	map->vmm_proc = NULL;
@@ -305,6 +310,8 @@ vmmap_clone(vmmap_t *map) {
 		new_area->vma_prot = area->vma_prot;
 		new_area->vma_flags = area->vma_flags;
 		/* list_insert_tail(&(new_map->vmm_list), &(new_area->vma_plink)); */ /* not sure of this */
+		list_link_init(&new_area->vma_olink);
+		list_link_init(&new_area->vma_plink);
 		vmmap_insert(new_map, new_area);
 	}list_iterate_end();
 	return new_map;
@@ -382,6 +389,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 				return -1;
 			}
 		}
+		/* new_mmobj may be a shadow object or not. Handle that case **** */
 		list_insert_tail(mmobj_bottom_vmas(new_mmobj), &(new_area->vma_olink));
 
 		if(flags & MAP_PRIVATE) { /* shadow object */
@@ -400,7 +408,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 			new_area->vma_obj = new_mmobj;
 		}
 
-		new_area->vma_obj = new_mmobj;
+		/*new_area->vma_obj = new_mmobj;*/
 		vmmap_insert(map, new_area);
 		new_area->vma_vmmap = map;
 		new = &new_area;
@@ -449,7 +457,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 			new_area->vma_obj = new_mmobj;
 		}
 
-		new_area->vma_obj = new_mmobj;
+		/*new_area->vma_obj = new_mmobj;*/
 		vmmap_insert(map, new_area);
 		new_area->vma_vmmap = map;
 		new = &new_area;
@@ -556,33 +564,18 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
  * given range, 0 otherwise.
  */
 int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
-	vmarea_t *area = vmmap_lookup(map, startvfn);
-	if(area) {
-		/* int page_num = area->vma_obj->mmo_nrespages;*/
-		uint32_t i = startvfn - (area->vma_start);
-		uint32_t num_free = 0;
-		/* if ((uint32_t) page_num < npages) {
-			return 1;
-		} */
-		pframe_t* pf;
-		for (; i < npages; i++) {
-			area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
-			if(pf) {
-				if (pframe_is_free(pf)) {
-					num_free++;
-				} else {
-					return 0;
-				};
-				if (num_free == npages) {
-					return 0;
-				}
-			} else {
-				return 1;
-			}
-		};
+	uint32_t endvfn = startvfn + npages;
+
+	vmarea_t *area = NULL;
+	if(!list_empty(&(map->vmm_list))) {
+	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
+		if(area->vma_start <= startvfn && area->vma_end > startvfn ){
+			return 0;
+		}
+	}list_iterate_end();
 	}
-	/*NOT_YET_IMPLEMENTED("VM: vmmap_is_range_empty");*/
 	return 1;
+	/*NOT_YET_IMPLEMENTED("VM: vmmap_is_range_empty");*/
 }
 
 /* Read into 'buf' from the virtual address space of 'map' starting at
@@ -643,7 +636,7 @@ int vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count) {
 	uint32_t vfn = ADDR_TO_PN(addr);
 	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
 	/*look up the page*/
-	int pagenum = vfn - (area->vma_start)/* + (area->vma_off)*/; /*pagenum based on the vfn of the vaddr*/
+	int pagenum = vfn - (area->vma_start) + (area->vma_off); /*pagenum based on the vfn of the vaddr*/
 	struct mmobj *memobj = area->vma_obj;
 	pframe_t* pg_frame = NULL;
 	int write_count = 0;
