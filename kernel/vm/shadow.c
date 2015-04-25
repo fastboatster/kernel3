@@ -89,7 +89,7 @@ shadow_create()
 	mmobj_t *new_mmobj = (mmobj_t*)slab_obj_alloc(shadow_allocator);
 	if(new_mmobj) {
 		mmobj_init(new_mmobj, &shadow_mmobj_ops);
-		/*new_mmobj->mmo_un.mmo_bottom_obj = NULL;*/
+		new_mmobj->mmo_un.mmo_bottom_obj = NULL;
 		new_mmobj->mmo_refcount++;
 	}
 	return new_mmobj;
@@ -222,10 +222,9 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	KASSERT(!pframe_is_pinned(pf));
 	dbg(DBG_PRINT, "(GRADING3A 6.d)\n");
 
-
 	pframe_t* page = NULL;
 	mmobj_t *temp = o;
-	while(temp->mmo_shadowed) {
+	while(NULL != temp->mmo_un.mmo_bottom_obj) {
 		page = pframe_get_resident(temp, pf->pf_pagenum);
 		if(page) {
 			break;
@@ -236,18 +235,15 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	/* lookup the page, not temp is the bottom most object */
 	if(!page) { /* look for a page in the bottom object */
 		int found_page = shadow_lookuppage(temp, pf->pf_pagenum, 1, &page);
-		if(found_page < 0){
+		if(found_page < 0) {
 			return -1;
 		}
 	}
-
-	pframe_set_dirty(pf);
 	if(page) {
+		pframe_set_dirty(pf);
+		pframe_pin(pf);
 		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
 		return 0;
-	}else{
-		pframe_clear_dirty(pf);
-		return -1;
 	}
 	return -1;
 }
