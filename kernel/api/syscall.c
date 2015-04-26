@@ -177,10 +177,11 @@ sys_getdents(getdents_args_t *arg)
 			return -1;
 	}
 
-	int count = 0;
-	count = getdents_args.count;
+	/*count = getdents_args.count;*/
+	int count = (getdents_args.count)/sizeof(dirent_t);
+	int do_getdent_retval = -1;
 	while(count > 0) {
-		int do_getdent_retval = do_getdent(getdents_args.fd, getdents_args.dirp);
+		do_getdent_retval = do_getdent(getdents_args.fd, getdents_args.dirp);
 		if(do_getdent_retval < 0) {
 			curthr->kt_errno = do_getdent_retval;
 			return -1;
@@ -190,7 +191,7 @@ sys_getdents(getdents_args_t *arg)
 	/*
 	 * Not sure what the last part of the comment says.
 	 */
-	return 0;
+	return do_getdent_retval;
 
 }
 
