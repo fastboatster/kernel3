@@ -205,6 +205,19 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 	list_link_t *link;
 	uint32_t num_free = 0; /*number of contiguous free pages*/
 	if (dir == VMMAP_DIR_HILO) {
+		vmarea_t *area = NULL;
+		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink){
+			uint32_t startvfn = area->vma_start;
+			uint32_t endvfn = area->vma_end;
+			while((endvfn-startvfn) >= npages){
+				if(vmmap_is_range_empty(map, endvfn-npages, npages) == 1){ /* mapping */
+					return endvfn-npages;
+				}
+				endvfn--;
+			}
+		}list_iterate_end();
+	}
+		/*
 		for (link = (&(map->vmm_list))->l_prev; link != &(map->vmm_list); link =
 				link->l_prev) {
 			vmarea_t* area = list_item(link, vmarea_t, vma_plink);
@@ -223,8 +236,7 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 					return vfn_start + i;
 				}
 			}
-		}
-	};
+		}*/
 
 	if (dir == VMMAP_DIR_LOHI) {
 		for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
@@ -255,6 +267,7 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 	else {
 		return ADDR_TO_PN(USER_MEM_LOW);
 	}
+
 	return -1;
 
 	/*	NOT_YET_IMPLEMENTED("VM: vmmap_find_range");
