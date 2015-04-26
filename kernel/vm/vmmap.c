@@ -202,17 +202,37 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 	KASSERT(NULL != map);
 	KASSERT(0 < npages);
 	if (dir == VMMAP_DIR_HILO){
-		uint32_t begin_vfn = ADDR_TO_PN(USER_MEM_HIGH);
+		uint32_t end_vfn = ADDR_TO_PN(USER_MEM_HIGH);
+		vmarea_t *area = NULL;
+		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink) {
+			uint32_t vmarea_end = area->vma_end;
+			uint32_t gap = end_vfn - vmarea_end;
+			if(gap >= npages) {
+				return end_vfn-npages;
+			}
+			end_vfn = area->vma_start-1;
+		}list_iterate_end();
+
+		/*
 		uint32_t stop_vfn = ADDR_TO_PN(USER_MEM_LOW);
 		while(begin_vfn != stop_vfn) {
-			if(vmmap_is_range_empty(map,begin_vfn-(npages), npages) == 1) {
+			if(vmmap_is_range_empty(map, begin_vfn-(npages), npages) == 1) {
 				return begin_vfn-(npages);
 			}
 			begin_vfn--;
-		}
+		}*/
 	}
-	if (dir == VMMAP_DIR_LOHI){
-
+	if (dir == VMMAP_DIR_LOHI) {
+		uint32_t start_vfn = ADDR_TO_PN(USER_MEM_LOW);
+		vmarea_t *area = NULL;
+		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink) {
+			uint32_t vmarea_start = area->vma_start;
+			uint32_t gap = vmarea_start - start_vfn;
+			if(gap >= npages) {
+				return start_vfn;
+			}
+			start_vfn = area->vma_end;
+		}list_iterate_end();
 	}
 	return -1;
 
