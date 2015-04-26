@@ -209,12 +209,16 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink){
 			uint32_t startvfn = area->vma_start;
 			uint32_t endvfn = area->vma_end;
-			while((endvfn-startvfn) >= npages){
-				if(vmmap_is_range_empty(map, endvfn-npages, npages) == 1){ /* mapping */
+			/*while((endvfn-startvfn) >= npages){
+				if(vmmap_is_range_empty(map, endvfn-npages, npages) == 1){
 					return endvfn-npages;
 				}
 				endvfn--;
+			}*/
+			if(vmmap_is_range_empty(map,startvfn-(npages),startvfn-1) == 1){
+				return startvfn-(npages);
 			}
+
 		}list_iterate_end();
 	}
 		/*
