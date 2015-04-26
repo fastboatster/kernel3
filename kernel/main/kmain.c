@@ -460,6 +460,7 @@ initproc_run(int arg1, void *arg2)
 	char* argv[] = { NULL };
 	char* envp [] = { NULL };
 	kernel_execve("/sbin/init", argv, envp);
+	/*kernel_execve("usr/bin/forkbomb", argv, envp);*/
 
 	/*do_open("/dev/tty0", O_RDONLY);
 	do_open("/dev/tty0", O_WRONLY);
