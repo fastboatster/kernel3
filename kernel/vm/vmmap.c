@@ -209,16 +209,9 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink){
 			uint32_t startvfn = area->vma_start;
 			uint32_t endvfn = area->vma_end;
-			/*while((endvfn-startvfn) >= npages){
-				if(vmmap_is_range_empty(map, endvfn-npages, npages) == 1){
-					return endvfn-npages;
-				}
-				endvfn--;
-			}*/
 			if(vmmap_is_range_empty(map,startvfn-(npages),startvfn-1) == 1){
 				return startvfn-(npages);
 			}
-
 		}list_iterate_end();
 	}
 		/*
@@ -243,6 +236,7 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 		}*/
 
 	if (dir == VMMAP_DIR_LOHI) {
+		/*
 		for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
 				link->l_next) {
 			vmarea_t* area = list_item(link, vmarea_t, vma_plink);
@@ -261,7 +255,15 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 					return (vfn_start + i - npages);
 				}
 			}
-		}
+		}*/
+		vmarea_t *area = NULL;
+		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink){
+			uint32_t startvfn = area->vma_start;
+			uint32_t endvfn = area->vma_end;
+			if(vmmap_is_range_empty(map, endvfn+1, endvfn+npages) == 1){
+				return endvfn+1;
+			}
+		}list_iterate_end();
 	};
 
 	/* map->vmm_list is empty */
