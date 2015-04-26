@@ -523,6 +523,7 @@ special_file_mmap(vnode_t *file, vmarea_t *vma, mmobj_t **ret)
         	bytedev_t look=file->vn_cdev = bytedev_lookup(file->vn_devid);
         	int retval=look->cd_ops->mmap(file,vma,ret);
         	return retval;
+
 }
 
 /* Just as with mmap above, pass the call through to the
