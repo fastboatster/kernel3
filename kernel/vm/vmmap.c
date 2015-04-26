@@ -201,79 +201,19 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 
 	KASSERT(NULL != map);
 	KASSERT(0 < npages);
-
-	list_link_t *link;
-	uint32_t num_free = 0; /*number of contiguous free pages*/
-	if (dir == VMMAP_DIR_HILO) {
-		vmarea_t *area = NULL;
-		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink){
-			uint32_t startvfn = area->vma_start;
-			uint32_t endvfn = area->vma_end;
-			if(vmmap_is_range_empty(map,startvfn-(npages),startvfn-1) == 1){
-				return startvfn-(npages);
+	if (dir == VMMAP_DIR_HILO){
+		uint32_t begin_vfn = ADDR_TO_PN(USER_MEM_HIGH);
+		uint32_t stop_vfn = ADDR_TO_PN(USER_MEM_LOW);
+		while(begin_vfn != stop_vfn) {
+			if(vmmap_is_range_empty(map,begin_vfn-(npages), npages) == 1) {
+				return begin_vfn-(npages);
 			}
-		}list_iterate_end();
+			begin_vfn--;
+		}
 	}
-		/*
-		for (link = (&(map->vmm_list))->l_prev; link != &(map->vmm_list); link =
-				link->l_prev) {
-			vmarea_t* area = list_item(link, vmarea_t, vma_plink);
-			uint32_t vfn_start = area->vma_start;
-			int page_num = area->vma_obj->mmo_nrespages;
-			int i = 0;
-			pframe_t* pf;
-			for (i = page_num - 1; i >= 0; i--) {
-				area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
-				if (pframe_is_free(pf)) {
-					num_free++;
-				} else {
-					num_free = 0;
-				};
-				if (num_free == npages) {
-					return vfn_start + i;
-				}
-			}
-		}*/
+	if (dir == VMMAP_DIR_LOHI){
 
-	if (dir == VMMAP_DIR_LOHI) {
-		/*
-		for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
-				link->l_next) {
-			vmarea_t* area = list_item(link, vmarea_t, vma_plink);
-			uint32_t vfn_start = area->vma_start;
-			int page_num = area->vma_obj->mmo_nrespages;
-			int i = 0;
-			pframe_t* pf;
-			for (i = 0; i < page_num; i++) {
-				area->vma_obj->mmo_ops->lookuppage(area->vma_obj, i, 1, &pf);
-				if (pframe_is_free(pf)) {
-					num_free++;
-				} else {
-					num_free = 0;
-				};
-				if (num_free == npages) {
-					return (vfn_start + i - npages);
-				}
-			}
-		}*/
-		vmarea_t *area = NULL;
-		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink){
-			uint32_t startvfn = area->vma_start;
-			uint32_t endvfn = area->vma_end;
-			if(vmmap_is_range_empty(map, endvfn+1, endvfn+npages) == 1){
-				return endvfn+1;
-			}
-		}list_iterate_end();
-	};
-
-	/* map->vmm_list is empty */
-	if(VMMAP_DIR_HILO == dir) {
-		return ADDR_TO_PN(USER_MEM_HIGH)-npages+1;
 	}
-	else {
-		return ADDR_TO_PN(USER_MEM_LOW);
-	}
-
 	return -1;
 
 	/*	NOT_YET_IMPLEMENTED("VM: vmmap_find_range");
