@@ -459,7 +459,7 @@ initproc_run(int arg1, void *arg2)
 #ifdef __DRIVERS__
 	char* argv[] = { NULL };
 	char* envp [] = { NULL };
-	kernel_execve("/usr/bin/fork-and-wait", argv, envp);
+	kernel_execve("/sbin/init", argv, envp);
 
 	/*do_open("/dev/tty0", O_RDONLY);
 	do_open("/dev/tty0", O_WRONLY);

@@ -69,6 +69,42 @@
 int
 do_brk(void *addr, void **ret)
 {
-        NOT_YET_IMPLEMENTED("VM: do_brk");
-        return 0;
+       /* NOT_YET_IMPLEMENTED("VM: do_brk");
+        return 0;*/
+        if (addr == NULL){
+        		ret = &curproc->p_brk;
+        		return 0;
+        	}
+
+        	if ((addr < curproc->p_start_brk) || (addr > USER_MEM_HIGH)){
+        		return -ENOMEM;
+        	}
+        	vmarea_t * new_area = vmmap_lookup(curproc->p_vmmap, ADDR_TO_PN(curproc->p_brk));
+        	if (new_area == NULL){/*This should be not be NULL*/
+        		return -1; /* what should we return as error*/
+        	}
+        	if (addr < curproc->p_brk){
+        		curproc->p_brk = addr;
+        		new_area->vma_end = ADDR_TO_PN(addr);
+        		ret = &curproc->p_brk;
+        		return 0;
+        	}
+        	uint32_t end_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(addr));
+        	uint32_t start_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(curproc->p_brk));
+
+        	/*Check iff the range is empty*/
+        	int range_ret = vmmap_is_range_empty(curproc->p_vmmap, start_vfn, start_vfn-end_vfn);
+        	if (range_ret){
+        		curproc->p_brk = addr;
+        		new_area->vma_end = ADDR_TO_PN(addr);
+        		ret = &curproc->p_brk;
+        	}
+        	else{/*There is a mapping, so find the vma_area n set the end to the start of it*/
+        		vmarea_t * area = vmmap_lookup(curproc->p_vmmap, ADDR_TO_PN(addr));
+        		curproc->p_brk = PN_TO_ADDR(area->vma_start);
+        		new_area->vma_end = area->vma_start;
+        		ret = &curproc->p_brk;
+        	}
+        	*ret = NULL;
+        	return 0;
 }
