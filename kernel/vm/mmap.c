@@ -96,6 +96,25 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	if ((flags!=MAP_PRIVATE) && (flags!=MAP_SHARED) && flags != MAP_FIXED && flags != MAP_ANON ){
 			return -EINVAL;
 	}
+    /*what for -ENFILE,number greater than max open file limit*/
+	if((prot & !PROT_EXEC)) {
+		return -EPERM;
+	}
+
+	file_t *new_file = fget(fd);
+    if(new_file == NULL){
+    	/*fput(new_file);*/
+    	return -ENFILE;
+    }
+
+    addr = (uintptr_t)addr;
+	if (len==0) {
+		return -EINVAL;
+	}
+	if(PAGE_ALIGNED(addr)==0) {
+		return -EINVAL;
+	}
+
 	/* invalid file descriptor */
 	if(fd < 0 || fd >= NFILES || curproc->p_files[fd] == NULL) {
 		return -EBADF;
@@ -110,26 +129,8 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 		return -EACCES;
 	}
 	if((flags & MAP_SHARED) && (prot & PROT_WRITE) && !(curproc->p_files[fd]->f_mode & FMODE_APPEND)) {
-        		return -EACCES;
+        return -EACCES;
 	}
-
-	if (len==0) {
-		return -EINVAL;
-	}
-	if(PAGE_ALIGNED(addr)==0) {
-		return -EINVAL;
-	}
-
-    /*what for -ENFILE,number greater than max open file limit*/
-	if((prot & !PROT_EXEC)) {
-		return -EPERM;
-	}
-
-	file_t *new_file = fget(fd);
-    if(new_file == NULL){
-    	/*fput(new_file);*/
-    	return -ENFILE;
-    }
 
 	/*if ((flags==MAP_DENYWRITE) && (curproc->p_files[fd]->f_mode==FMODE_WRITE))
 		return -ETXTBSY;*/
@@ -137,7 +138,7 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	/*what should be lopage and npage*/
 	uint32_t lopage = ADDR_TO_PN(addr);
 	uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
-	int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, ret);
+	int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, (vmarea_t**)ret);
 	return i;
 
 }
