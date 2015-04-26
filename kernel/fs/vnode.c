@@ -520,7 +520,7 @@ special_file_mmap(vnode_t *file, vmarea_t *vma, mmobj_t **ret)
         	KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
         	KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
         	KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->mmap);
-        	bytedev_t look=file->vn_cdev = bytedev_lookup(file->vn_devid);
+        	bytedev_t* look=file->vn_cdev = bytedev_lookup(file->vn_devid);
         	int retval=look->cd_ops->mmap(file,vma,ret);
         	return retval;
 
