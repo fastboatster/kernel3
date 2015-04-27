@@ -49,98 +49,42 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 {
         /*NOT_YET_IMPLEMENTED("VM: do_mmap");
         return -1;*/
-       /* if(flags==MAP_PRIVATE && curproc->p_files[fd]->f_mode!=FMODE_READ)
-        		return -EACCES;
+		if ((flags!=MAP_PRIVATE) && (flags!=MAP_SHARED) && flags != MAP_FIXED && flags != MAP_ANON ){
+				return -EINVAL;
+		}
+		addr = (uintptr_t) addr;
 
-        	if(flags == MAP_SHARED && prot == PROT_WRITE && curproc->p_files[fd]->f_mode != (FMODE_READ || FMODE_WRITE))
-        		return -EACCES;
-
-        	if(flags == MAP_SHARED && prot == PROT_WRITE && curproc->p_files[fd]->f_mode != FMODE_APPEND)
-        		return -EACCES;
-
-        	if((fd < 0 || fd >= NFILES || (curproc->p_files[fd] == NULL)) && flags!=MAP_ANON)
-        	     return -EBADF;
-
-
-        	if (len==0)
-        	return -EINVAL;
-
-        	if(PAGE_ALIGNED(addr)==0)
-        	return -EINVAL;
-        	what should be the offset value be for einval,,,,can it be 0
-
-        	if ((flags!=MAP_PRIVATE) && (flags!=MAP_SHARED) && flags != MAP_FIXED && flags != MAP_ANON )
-        			return -EINVAL;
-        	if (flags==(MAP_PRIVATE|MAP_SHARED))
-        		return -EINVAL;
-        	what for -ENFILE,number greater than max open file limit
-        	if(prot != PROT_EXEC)
-        	     return -EPERM;
-
-        	file_t *new_file=fget(-1);
-        	if(new_file==0){
-        		fput(new_file);
-        		return -ENFILE;
-        	}
-
-        	if ((flags==MAP_DENYWRITE) && (curproc->p_files[fd]->f_mode==FMODE_WRITE))
-        		return -ETXTBSY;
-        	tlb_flush((uintptr_t)addr);
-        	what should be lopage and npage
-        	uint32_t lopage = ADDR_TO_PN(addr);
-        	uint32_t npages = len / PAGE_SIZE + 1;
-        	int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, (vmarea_t**)ret);
-        	return 0;*/
-	vmarea_t *new=NULL;
-	/* invalid flags */
-	if ((flags!=MAP_PRIVATE) && (flags!=MAP_SHARED) && flags != MAP_FIXED && flags != MAP_ANON ){
+		/* invalid file descriptor */
+    	if(fd < 0 || fd >= NFILES || curproc->p_files[fd]==NULL) {
+    	     return -EBADF;
+    	}
+    	/* args not valid */
+		if(len == 0 || (PAGE_ALIGNED(addr)==0)) {
 			return -EINVAL;
-	}
-    /*what for -ENFILE,number greater than max open file limit*/
-	if((prot & !PROT_EXEC)) {
-		return -EPERM;
-	}
+		}
+		if( (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED)) || ((flags & MAP_PRIVATE) && (flags & MAP_SHARED)) ){
+			return -EINVAL;
+		}
 
-	file_t *new_file = fget(fd);
-    if(new_file == NULL){
-    	/*fput(new_file);*/
-    	return -ENFILE;
-    }
+		if((flags & MAP_PRIVATE) && !(curproc->p_files[fd]->f_mode & FMODE_READ)){
+			return -EACCES;
+		}
 
-    addr = (uintptr_t)addr;
-	if (len==0) {
-		return -EINVAL;
-	}
-	if(PAGE_ALIGNED(addr)==0) {
-		return -EINVAL;
-	}
-
-	/* invalid file descriptor */
-	if(fd < 0 || fd >= NFILES || curproc->p_files[fd] == NULL) {
-		return -EBADF;
-	}
-
-	/* trying to access private area without read permission */
-	if((flags & MAP_PRIVATE) && !(curproc->p_files[fd]->f_mode & FMODE_READ)){
-		return -EACCES;
-	}
-
-	if((flags & MAP_SHARED) && (prot & PROT_WRITE) && !(curproc->p_files[fd]->f_mode & (FMODE_READ | FMODE_WRITE))) {
-		return -EACCES;
-	}
-	if((flags & MAP_SHARED) && (prot & PROT_WRITE) && !(curproc->p_files[fd]->f_mode & FMODE_APPEND)) {
-        return -EACCES;
-	}
-
-	/*if ((flags==MAP_DENYWRITE) && (curproc->p_files[fd]->f_mode==FMODE_WRITE))
-		return -ETXTBSY;*/
-	tlb_flush((uintptr_t)addr);
-	/*what should be lopage and npage*/
-	uint32_t lopage = ADDR_TO_PN(addr);
-	uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
-	int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, (vmarea_t**)ret);
-	return i;
-
+		if((flags & MAP_SHARED) && (prot & PROT_WRITE)) {
+			if( !(curproc->p_files[fd]->f_mode & FMODE_READ) && !(curproc->p_files[fd]->f_mode & FMODE_WRITE) ){
+				return -EACCES;
+			}
+			if(curproc->p_files[fd]->f_mode == FMODE_APPEND){
+				return -EACCES;
+			}
+		}
+       	/*tlb_flush((uintptr_t)addr);*/
+		/*what should be lopage and npage*/
+		uint32_t lopage = ADDR_TO_PN(addr);
+		uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
+		int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, (vmarea_t**)ret);
+		tlb_flush((uintptr_t)addr);
+		return i;
 }
 
 
