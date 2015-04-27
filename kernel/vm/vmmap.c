@@ -397,7 +397,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		/*new_area->vma_obj = new_mmobj;*/
 		vmmap_insert(map, new_area);
 		new_area->vma_vmmap = map;
-		new = &new_area;
+		*new = new_area;
 		return 0;
 	} else { /* lopage != 0 */
 		int is_range_empty = vmmap_is_range_empty(map, lopage, npages);
@@ -446,7 +446,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		/*new_area->vma_obj = new_mmobj;*/
 		vmmap_insert(map, new_area);
 		new_area->vma_vmmap = map;
-		new = &new_area;
+		*new = new_area;
 		return 0;
 	}
 	return -1;
