@@ -208,7 +208,7 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 			uint32_t vmarea_end = area->vma_end;
 			uint32_t gap = end_vfn - vmarea_end;
 			if(gap >= npages) {
-				return end_vfn-npages;
+				return vmarea_end;
 			}
 			end_vfn = area->vma_start-1;
 		}list_iterate_end();
