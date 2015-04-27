@@ -85,26 +85,31 @@ do_brk(void *addr, void **ret)
         	}
         	if (addr < curproc->p_brk){
         		curproc->p_brk = addr;
-        		new_area->vma_end = ADDR_TO_PN(addr);
-        		ret = &curproc->p_brk;
+        		new_area->vma_end = ADDR_TO_PN(PAGE_ALIGN_UP(addr));
+        		*ret = curproc->p_brk;
         		return 0;
         	}
-        	uint32_t end_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(addr));
-        	uint32_t start_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(curproc->p_brk));
-
-        	/*Check iff the range is empty*/
+        	uint32_t end_vfn = ADDR_TO_PN(PAGE_ALIGN_UP(addr));
+        	if(end_vfn == new_area->vma_end) { /*if page-aligned vfn of a new start equals the end of new_area, increment it*/
+        		end_vfn++;
+        	}
+        	new_area->vma_end = end_vfn;
+        	curproc->p_brk = PAGE_ALIGN_UP(addr);
+        	*ret = curproc->p_brk;
+        /*uint32_t start_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(curproc->p_brk));*/
+        	/*Check iff the range is empty
         	int range_ret = vmmap_is_range_empty(curproc->p_vmmap, start_vfn, start_vfn-end_vfn);
         	if (range_ret){
         		curproc->p_brk = addr;
         		new_area->vma_end = ADDR_TO_PN(addr);
-        		ret = &curproc->p_brk;
+        		*ret = curproc->p_brk;
         	}
-        	else{/*There is a mapping, so find the vma_area n set the end to the start of it*/
+        	else{There is a mapping, so find the vma_area n set the end to the start of it
         		vmarea_t * area = vmmap_lookup(curproc->p_vmmap, ADDR_TO_PN(addr));
         		curproc->p_brk = PN_TO_ADDR(area->vma_start);
         		new_area->vma_end = area->vma_start;
         		ret = &curproc->p_brk;
-        	}
-        	*ret = NULL;
+        	}*/
+
         	return 0;
 }
