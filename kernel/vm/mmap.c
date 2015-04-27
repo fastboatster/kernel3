@@ -79,13 +79,13 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 			}
 		}
        	/*tlb_flush((uintptr_t)addr);*/
+		tlb_flush((uintptr_t)addr);
 		/*what should be lopage and npage*/
 		uint32_t lopage = ADDR_TO_PN(addr);
 		uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
-		vmarea_t ** new_area;
-		int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, new_area);
-		*ret = &((*new_area)->vma_start);
-		tlb_flush((uintptr_t)addr);
+		vmarea_t *new_area;
+		int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, &new_area);
+		*ret = (uint32_t *)new_area->vma_start;
 		return i;
 }
 
