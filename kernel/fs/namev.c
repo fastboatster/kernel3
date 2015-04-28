@@ -49,9 +49,9 @@ lookup(vnode_t *dir, const char *name, size_t len, vnode_t **result)
 		KASSERT(NULL != result);
 		dbg(DBG_PRINT, "(GRADING2A 2.a)\n");
 
-	/*	if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){ this doesn't ever get executed
+		if(dir->vn_ops->lookup == NULL || !S_ISDIR(dir->vn_mode)){ /*this doesn't ever get executed*/
 			return -ENOTDIR;
-		}*/
+		}
 		if(len > NAME_LEN) {
 			dbg(DBG_PRINT, "INFO: name too long (%s)\n", name);
 			dbg(DBG_PRINT, "(GRADING2B)\n");
@@ -119,9 +119,9 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 		vnode_t *result = NULL;
 		char *pname = (char *)pathname; /* component name */
 
-	/*	if(strlen(pathname) > MAXPATHLEN) {
-			return -ENAMETOOLONG; doesn't get executed
-		}*/
+		if(strlen(pathname) > MAXPATHLEN) {
+			return -ENAMETOOLONG;
+		}
 
 		if(pathname[0] == '/') {
 			dir = vfs_root_vn;
@@ -133,10 +133,10 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			dir = curproc->p_cwd;
 			dbg(DBG_PRINT, "(GRADING2A)\n");
 			vref(dir);
-		} /* else {  base not null doesn't execute
+		} else {
 			dir = base;
 			vref(dir);
-		}*/
+		}
 
 		char *separator = pname;
 
@@ -170,17 +170,17 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 
 			dbg(DBG_PRINT, "INFO: calling lookup() (%s) (%d)\n", pname, plen);
 
-        /*    if(NULL == dir){ doesn't get executed
+			if(NULL == dir){ /*doesn't get executed*/
                 return -ENOENT;
-            }*/
-        /*    if (!S_ISDIR(dir->vn_mode)){ doesn't get executed
+            }
+			if (!S_ISDIR(dir->vn_mode)){ /*doesn't get executed*/
                 vput(dir);
                 return -ENOTDIR;
-            }*/
-		/*	if(plen > NAME_LEN){ doesn't get executed
+            }
+			if(plen > NAME_LEN){ /*doesn't get executed*/
 				vput(dir);
 				return -ENAMETOOLONG;
-			}*/
+			}
 
 			if(plen > 0) { /* empty name */
 				int lookup_resp = lookup(dir, pname, plen, &result);
@@ -243,10 +243,10 @@ open_namev(const char *pathname, int flag, vnode_t **res_vnode, vnode_t *base)
         	dbg(DBG_PRINT, "(GRADING2B)\n");
         	return dir_namev_resp;
         }
-       /* if(!S_ISDIR(dir_res_vnode->vn_mode)){
-        	vput(dir_res_vnode); because dir_namev increments and returns
-        	return -ENOTDIR;doesn't get executed
-        }*/
+       if(!S_ISDIR(dir_res_vnode->vn_mode)){
+        	vput(dir_res_vnode);/* because dir_namev increments and returns*/
+        	return -ENOTDIR; /*doesn't get executed*/
+        }
         /* Look up whether the file exists */
         int file_lookup_res = lookup(dir_res_vnode, filename, namelen, res_vnode);
         if(file_lookup_res < 0) {

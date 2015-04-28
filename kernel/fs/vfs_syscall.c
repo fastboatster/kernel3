@@ -117,10 +117,10 @@ int do_write(int fd, const void *buf, size_t nbytes) {
 		dbg(DBG_PRINT, "(GRADING2B)\n");
 	}
 	int byteswrote = file->f_vnode->vn_ops->write(file->f_vnode, seek_pos, buf, nbytes);
-/*	if(byteswrote <= 0) {doesn't get executed
+	if(byteswrote <= 0) { /*doesn't get executed*/
 		fput(file);
 		return byteswrote;
-	}*/
+	}
 	/* write successful and byteswrote is some +ve integer */
     KASSERT((S_ISCHR(file->f_vnode->vn_mode)) || (S_ISBLK(file->f_vnode->vn_mode)) || ((S_ISREG(file->f_vnode->vn_mode)) && (file->f_pos <= file->f_vnode->vn_len)));
     dbg(DBG_PRINT, "(GRADING2A 3.a)\n");
@@ -185,10 +185,10 @@ int do_dup(int fd) {
 	KASSERT(NULL != new_handle);
 
 	int new_fd = get_empty_fd(curproc);
-/*	if (new_fd == -EMFILE) { never gets executed
+	if (new_fd == -EMFILE) { /*never gets executed*/
 		fput(new_handle);
 		return -EMFILE;
-	}*/
+	}
 	curproc->p_files[new_fd] = new_handle;
 	return new_fd;
 }
@@ -268,13 +268,13 @@ int do_mknod(const char *path, int mode, unsigned devid) {
 	size_t filename_len = 0 ;
 	const char *filename;
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
-/*	if(dir_namev_retval < 0) { doesn't get executed
-		return dir_namev_retval; ENOENT, ENOTDIR, ENAMETOOLONG
-	}*/
-	/*if(!S_ISDIR(dir_vnode->vn_mode)){doesn't exec
+	if(dir_namev_retval < 0) { /*doesn't get executed*/
+		return dir_namev_retval; /*ENOENT, ENOTDIR, ENAMETOOLONG*/
+	}
+	if(!S_ISDIR(dir_vnode->vn_mode)){ /*doesn't exec*/
 		vput(dir_vnode);
 		return -ENOTDIR;
-	}*/
+	}
 	if(filename_len > 0) {
 		vnode_t *file_vnode = NULL;
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
@@ -285,7 +285,7 @@ int do_mknod(const char *path, int mode, unsigned devid) {
 			int res = dir_vnode->vn_ops->mknod(dir_vnode, filename, filename_len, mode, devid);
 			vput(dir_vnode); /* not sure of it*/
 			return res;
-		}/*else {doesn't exec
+		}else {/*doesn't exec*/
 			if(lookup_retval == 0) {
 				vput(file_vnode);
 				vput(dir_vnode);
@@ -293,7 +293,7 @@ int do_mknod(const char *path, int mode, unsigned devid) {
 			}
 			vput(dir_vnode);
 			return lookup_retval;
-		}*/
+		}
 	}
 	vput(dir_vnode);
 	return 0;
@@ -327,10 +327,10 @@ int do_mkdir(const char *path) {
 		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return dir_namev_retval; /* ENOENT, ENOTDIR, ENAMETOOLONG*/
 	}
-	/*if(!S_ISDIR(dir_vnode->vn_mode)){doesn't get executed
+	if(!S_ISDIR(dir_vnode->vn_mode)){/*doesn't get executed*/
 		vput(dir_vnode);
 		return -ENOTDIR;
-	}*/
+	}
 	if(filename_len > 0) {
 		vnode_t *file_vnode = NULL;
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
@@ -389,10 +389,10 @@ int do_rmdir(const char *path) {
 		dbg(DBG_PRINT, "(GRADING2B)\n");
 		return dir_namev_retval; /* ENOENT,ENOTDIR, ENAMETOOLONG */
 	}
-	/*if(!S_ISDIR(temp->vn_mode)){ doesn't get executed
+	if(!S_ISDIR(temp->vn_mode)){ /*doesn't get executed*/
 		vput(temp);
 		return -ENOTDIR;
-	}*/
+	}
 	if(temp_len > 0) { /* parent dir found and the file name is valid */dbg(DBG_PRINT, "(GRADING2B)\n");
 		if (strcmp(temp_name,".") == 0) {
 			vput(temp);
@@ -445,13 +445,13 @@ int do_unlink(const char *path) {
 	size_t filename_len = 0;
 	const char *filename;
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
-/*	if(dir_namev_retval < 0) { doesn't execute
-		return dir_namev_retval;  ENOENT,ENOTDIR, ENAMETOOLONG
-	}*/
-	/*if(!S_ISDIR(dir_vnode->vn_mode)) {doesn't execute
+	if(dir_namev_retval < 0) { /*doesn't execute*/
+		return dir_namev_retval;  /*ENOENT,ENOTDIR, ENAMETOOLONG*/
+	}
+	if(!S_ISDIR(dir_vnode->vn_mode)) { /*doesn't execute*/
 		vput(dir_vnode);
 		return -ENOTDIR;
-	}*/
+	}
 	if(filename_len > 0) {
 		vnode_t *file_vnode = NULL;
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
@@ -695,9 +695,9 @@ int do_stat(const char *path, struct stat *buf) {
 	const char *filename = NULL;
 	int dir_namev_retval = dir_namev(path, &filename_len, &filename, NULL, &dir_vnode);
 	vnode_t *file_vnode = dir_vnode;
-/*	if(dir_namev_retval < 0) {doesn't get executed
+	if(dir_namev_retval < 0) {/*doesn't get executed*/
 		return dir_namev_retval;
-	}*/
+	}
 	if(filename_len > 0) { /* ==0*/  /* Looking a stat for the file */
 		dbg(DBG_PRINT, "(GRADING2B)\n");
 		int lookup_retval = lookup(dir_vnode, filename, filename_len, &file_vnode);
