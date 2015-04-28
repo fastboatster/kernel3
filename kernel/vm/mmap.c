@@ -49,7 +49,7 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 {
         /*NOT_YET_IMPLEMENTED("VM: do_mmap");
         return -1;*/
-		if ((flags!=MAP_PRIVATE) && (flags!=MAP_SHARED) && flags != MAP_FIXED && flags != MAP_ANON ){
+		if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED) && !(flags & MAP_FIXED) && !(flags & MAP_ANON) ){
 				return -EINVAL;
 		}
 		addr = (uintptr_t) addr;
