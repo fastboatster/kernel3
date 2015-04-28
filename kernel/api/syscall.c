@@ -85,7 +85,7 @@ sys_read(read_args_t *arg)
 		uint32_t num_bytes_read = 0;
 		int bytes_to_read = read_args.nbytes;
 
-		while(num_bytes_read != read_args.nbytes) {
+	/*	while(num_bytes_read != read_args.nbytes) {*/
 			void *buffer = page_alloc();
 			KASSERT(buffer != NULL);
 
@@ -106,7 +106,7 @@ sys_read(read_args_t *arg)
 				curthr->kt_errno = -bytes_read;
 				return -1;
 			}
-		}
+		/*}*/
 		return num_bytes_read; /* num_bytes_read == read_args.nbytes */
 }
 
