@@ -160,7 +160,7 @@ int
 range_perm(struct proc *p, const void *avaddr, size_t len, int perm)
 {
     /* NOT_YET_IMPLEMENTED("VM: range_perm");*/
-	if(NULL == avaddr) {
+	if(NULL == avaddr) { /*otherswise creates issue in do_stat*/
 		return 0;
 	}
 	uint32_t start_addr = (uint32_t)avaddr ;
