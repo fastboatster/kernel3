@@ -505,8 +505,8 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	/*case 3*/
 	if (lopage <= vmarea_start && lopage_end <= vmarea_end) {
 		area->vma_start = lopage_end;
-		uint32_t old_offset = area->vma_off;
-		area->vma_off = old_offset + (lopage_end - vmarea_start);
+	/*	uint32_t old_offset = area->vma_off;
+		area->vma_off = old_offset + (lopage_end - vmarea_start);*/
 		return 0;
 	}
 	/*case 1*/
@@ -528,7 +528,7 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 		r_area->vma_start = lopage_end;
 		r_area->vma_end = vmarea_end;
 		r_area->vma_flags = area->vma_flags;
-		r_area->vma_off = (area->vma_off) + (lopage_end - vmarea_start);
+		r_area->vma_off = (area->vma_off)/* + (lopage_end - vmarea_start)*/;
 		r_area->vma_obj = area->vma_obj;
 		r_area->vma_prot = area->vma_prot;
 		r_area->vma_vmmap = map;
