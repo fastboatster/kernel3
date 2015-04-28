@@ -491,8 +491,8 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	uint32_t vmarea_end = area->vma_end;
 	uint32_t lopage_end = lopage + npages;
 	/*case 2:*/
-	if (vmarea_start < lopage && vmarea_end < lopage_end) {
-		area->vma_end = lopage_end;
+	if (vmarea_start < lopage && vmarea_end <= lopage_end) {
+		area->vma_end = lopage;
 		return 0;
 	}
 	/*case 4*/

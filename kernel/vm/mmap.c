@@ -55,7 +55,7 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 		addr = (uintptr_t) addr;
 
 		/* invalid file descriptor */
-    	if(fd < 0 || fd >= NFILES || curproc->p_files[fd]==NULL) {
+    	if((fd < 0 && fd == -1) || fd >= NFILES || curproc->p_files[fd]==NULL) {
     	     return -EBADF;
     	}
     	/* args not valid */
@@ -78,13 +78,18 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 				return -EACCES;
 			}
 		}
+		struct vnode* vnod = curproc->p_files[fd]->f_vnode;
+		if (fd == -1) {
+			file_t * new_file = fget(fd);
+			vnod = new_file->f_vnode;
+		}
        	/*tlb_flush((uintptr_t)addr);*/
-		tlb_flush((uintptr_t)addr);
 		/*what should be lopage and npage*/
 		uint32_t lopage = ADDR_TO_PN(addr);
 		uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
 		vmarea_t *new_area;
-		int i = vmmap_map(curproc->p_vmmap, curproc->p_files[fd]->f_vnode, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, &new_area);
+		int i = vmmap_map(curproc->p_vmmap, vnod, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, &new_area);
+		tlb_flush((uintptr_t)addr);
 		*ret = (uint32_t *)PN_TO_ADDR(new_area->vma_start);
 		return i;
 }
@@ -118,10 +123,10 @@ do_munmap(void *addr, size_t len)
       		return -EINVAL;
       	if(PAGE_ALIGNED(addr)==0)
       		return -EINVAL;
-      	tlb_flush((uintptr_t)addr);
-      	uint32_t lopage = ADDR_TO_PN(addr);
+       	uint32_t lopage = ADDR_TO_PN(addr);
       	uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
       	vmmap_remove(curproc->p_vmmap,lopage,npages);
+      	tlb_flush((uintptr_t)addr);
       	return 0;
 }
 
