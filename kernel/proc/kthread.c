@@ -208,6 +208,8 @@ kthread_clone(kthread_t *thr)
         NOT_YET_IMPLEMENTED("VM: kthread_clone");
         return NULL; */
 		KASSERT(thr);
+		 KASSERT(KT_RUN == thr->kt_state);
+		 dbg(DBG_PRINT, "(GRADING3A 8.a)\n");
 		kthread_t *new_thr = (kthread_t*)slab_obj_alloc(kthread_allocator);
 		KASSERT(new_thr);
 		/* allocate the new stack: */
@@ -218,6 +220,8 @@ kthread_clone(kthread_t *thr)
 		new_thr->kt_proc = p; *//* ???? set the parent process to the process passed to the function */
 		new_thr->kt_cancelled = thr->kt_cancelled;
 		new_thr->kt_state  = KT_RUN;
+		KASSERT(KT_RUN == new_thr->kt_state);
+		dbg(DBG_PRINT, "(GRADING3A 8.a)\n");
 		/*initialize pointer to kt_wchan to NULL:*/
 		new_thr->kt_wchan = NULL; /*I dont know where it should be*/
 
