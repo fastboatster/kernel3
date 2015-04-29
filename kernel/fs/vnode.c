@@ -460,8 +460,22 @@ special_file_stat(vnode_t *vnode, struct stat *ss)
 static int
 special_file_read(vnode_t *file, off_t offset, void *buf, size_t count)
 {
-        NOT_YET_IMPLEMENTED("VFS: special_file_read");
-        return 0;
+   /* NOT_YET_IMPLEMENTED("VFS: special_file_read");
+    * return 0;*/
+   KASSERT(file);
+   dbg(DBG_PRINT, "(GRADING2A 1.a)\n");
+   KASSERT((S_ISCHR(file->vn_mode) || S_ISBLK(file->vn_mode)));
+   dbg(DBG_PRINT, "(GRADING2A 1.a)\n");
+   if (S_ISCHR(file->vn_mode)) {
+	   KASSERT(file->vn_cdev && file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->read);
+	   dbg(DBG_PRINT, "(GRADING2A 1.a)\n");
+	   vref(file); /* increment vnode count as we're about to read from it */
+	   int size = file->vn_cdev->cd_ops->read(file->vn_cdev, offset, buf, count);
+	   vput(file); /* decrement vnode count now that we're done with it*/
+	   return size;
+   }
+
+   return -ENOTSUP;
 }
 
 /*
@@ -473,8 +487,21 @@ special_file_read(vnode_t *file, off_t offset, void *buf, size_t count)
 static int
 special_file_write(vnode_t *file, off_t offset, const void *buf, size_t count)
 {
-        NOT_YET_IMPLEMENTED("VFS: special_file_write");
-        return 0;
+    /*NOT_YET_IMPLEMENTED("VFS: special_file_write");
+	  return 0; */
+	KASSERT(file);
+	dbg(DBG_PRINT, "(GRADING2A 1.b)\n");
+	KASSERT((S_ISCHR(file->vn_mode) || S_ISBLK(file->vn_mode)));
+	dbg(DBG_PRINT, "(GRADING2A 1.b)\n");
+	 if (S_ISCHR(file->vn_mode)) {
+		 KASSERT(file->vn_cdev && file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->write);
+		 dbg(DBG_PRINT, "(GRADING2A 1.b)\n");
+		 vref(file); /* increment vnode count as we're about to write to */
+		 int size = file->vn_cdev->cd_ops->write(file->vn_cdev, offset, buf, count);
+		 vput(file); /* decrement vnode count now that we're done with it*/
+		 return size;
+	 };
+	 return -ENOTSUP;
 }
 
 /* Memory map the special file represented by <file>. All of the
@@ -487,15 +514,22 @@ special_file_write(vnode_t *file, off_t offset, const void *buf, size_t count)
 static int
 special_file_mmap(vnode_t *file, vmarea_t *vma, mmobj_t **ret)
 {
-       /* NOT_YET_IMPLEMENTED("VM: special_file_mmap");
-        return 0;*/
+	/*    NOT_YET_IMPLEMENTED("VM: special_file_mmap");
+	 return 0;*/
 	KASSERT(file);
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
 	KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
-	KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
+	KASSERT(
+			(file->vn_cdev)
+					&& "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
 	KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->mmap);
-	bytedev_t look=file->vn_cdev = bytedev_lookup(file->vn_devid);
-	int retval=look->cd_ops->mmap(file,vma,ret);
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
+	bytedev_t* look = file->vn_cdev = bytedev_lookup(file->vn_devid);
+	int retval = look->cd_ops->mmap(file, vma, ret);
 	return retval;
+
 }
 
 /* Just as with mmap above, pass the call through to the
@@ -506,14 +540,14 @@ special_file_mmap(vnode_t *file, vmarea_t *vma, mmobj_t **ret)
 static int
 special_file_fillpage(vnode_t *file, off_t offset, void *pagebuf)
 {
-        /*NOT_YET_IMPLEMENTED("VM: special_file_fillpage");
+      /*  NOT_YET_IMPLEMENTED("VM: special_file_fillpage");
         return 0;*/
-		KASSERT(file);
-		KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
-		KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
-		KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->fillpage);
-		int retval=file->vn_cdev->cd_ops->fillpage(file,offset,pagebuf);
-		return retval;
+	KASSERT(file);
+			KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
+			KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+			KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->fillpage);
+			int retval=file->vn_cdev->cd_ops->fillpage(file,offset,pagebuf);
+			return retval;
 }
 
 /* Just as with mmap above, pass the call through to the
@@ -524,14 +558,14 @@ special_file_fillpage(vnode_t *file, off_t offset, void *pagebuf)
 static int
 special_file_dirtypage(vnode_t *file, off_t offset)
 {
-        /*NOT_YET_IMPLEMENTED("VM: special_file_dirtypage");
+       /* NOT_YET_IMPLEMENTED("VM: special_file_dirtypage");
         return 0;*/
-		KASSERT(file);
-		KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
-		KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
-		KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->dirtypage);
-		int retval=file->vn_cdev->cd_ops->dirtypage(file,offset);
-		return retval;
+	KASSERT(file);
+			KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
+			KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+			KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->dirtypage);
+			int retval=file->vn_cdev->cd_ops->dirtypage(file,offset);
+			return retval;
 }
 
 /* Just as with mmap above, pass the call through to the
@@ -542,16 +576,15 @@ special_file_dirtypage(vnode_t *file, off_t offset)
 static int
 special_file_cleanpage(vnode_t *file, off_t offset, void *pagebuf)
 {
-        /*NOT_YET_IMPLEMENTED("VM: special_file_cleanpage");
+     /*   NOT_YET_IMPLEMENTED("VM: special_file_cleanpage");
         return 0;*/
-		KASSERT(file);
-		KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
-		KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
-		KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->cleanpage);
-		int retval=file->vn_cdev->cd_ops->cleanpage(file,offset,pagebuf);
-		return retval;
+        KASSERT(file);
+        		KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
+        		KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+        		KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->cleanpage);
+        		int retval=file->vn_cdev->cd_ops->cleanpage(file,offset,pagebuf);
+        		return retval;
 }
-
 
 /*
  * Related to implementation of vnode vm_object entry points:
