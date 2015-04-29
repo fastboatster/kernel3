@@ -130,7 +130,7 @@ vmmap_create(void) {
 void vmmap_destroy(vmmap_t *map) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_destroy");*/
 	KASSERT(NULL != map);
-
+	dbg(DBG_PRINT, "(GRADING3A 3.a)\n");
 	/*list_link_t *link = (&(map->vmm_list))->l_next;
 	for (; link != &(map->vmm_list); link = link->l_next) {*/
 	vmarea_t* area = NULL;
@@ -163,6 +163,15 @@ void vmmap_insert(vmmap_t *map, vmarea_t *newvma) {
 
 	uint32_t new_vma_end = newvma->vma_end;
 	uint32_t new_vma_start = newvma->vma_start;
+	KASSERT(NULL != map && NULL != newvma);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+    KASSERT(NULL == newvma->vma_vmmap);
+    dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+	KASSERT(newvma->vma_start < newvma->vma_end);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+	KASSERT(ADDR_TO_PN(USER_MEM_LOW) <= newvma->vma_start && ADDR_TO_PN(USER_MEM_HIGH) >= newvma->vma_end);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+
 	/*find the spot in the vmareas list*/
 	list_link_t *link;
 	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
@@ -200,7 +209,9 @@ void vmmap_insert(vmmap_t *map, vmarea_t *newvma) {
 int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 
 	KASSERT(NULL != map);
+	dbg(DBG_PRINT, "(GRADING3A 3.c)\n");
 	KASSERT(0 < npages);
+	dbg(DBG_PRINT, "(GRADING3A 3.c)\n");
 	if (dir == VMMAP_DIR_HILO){
 		uint32_t end_vfn = ADDR_TO_PN(USER_MEM_HIGH);
 		vmarea_t *area = NULL;
@@ -247,6 +258,7 @@ vmarea_t *
 vmmap_lookup(vmmap_t *map, uint32_t vfn) {
 	/* NOT_YET_IMPLEMENTED("VM: vmmap_lookup");*/
 	KASSERT(NULL != map);
+	dbg(DBG_PRINT, "(GRADING3A 3.d)\n");
 
 	list_link_t *link;
 	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
@@ -329,12 +341,19 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 	*/
 
 	KASSERT(NULL != map);
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT(0 < npages);
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT(!(~(PROT_NONE | PROT_READ | PROT_WRITE | PROT_EXEC) & prot));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT((MAP_SHARED & flags) || (MAP_PRIVATE & flags));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT((0 == lopage) || (ADDR_TO_PN(USER_MEM_LOW) <= lopage));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT((0 == lopage) || (ADDR_TO_PN(USER_MEM_HIGH) >= (lopage + npages)));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT(PAGE_ALIGNED(off));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	/*KASSERT(new);*/
 	vmarea_t* new_area  = vmarea_alloc();
 	if(!new_area) {
@@ -551,7 +570,8 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
  */
 int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
 	uint32_t endvfn = startvfn + npages;
-
+	KASSERT((startvfn < endvfn) && (ADDR_TO_PN(USER_MEM_LOW) <= startvfn) && (ADDR_TO_PN(USER_MEM_HIGH) >= endvfn));
+	dbg(DBG_PRINT, "(GRADING3A 3.e)\n");
 	vmarea_t *area = NULL;
 	if(!list_empty(&(map->vmm_list))) {
 	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
