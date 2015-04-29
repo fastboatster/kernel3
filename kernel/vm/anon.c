@@ -166,7 +166,9 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
         return 0;
     */
 	KASSERT(pframe_is_busy(pf));
+	dbg(DBG_PRINT, "(GRADING3A 4.d)\n");
 	KASSERT(!pframe_is_pinned(pf));
+	dbg(DBG_PRINT, "(GRADING3A 4.d)\n");
 
 	/* get the page from the given frame */
 	/*pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
