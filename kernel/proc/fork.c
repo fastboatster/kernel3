@@ -177,7 +177,6 @@ do_fork(struct regs *regs)
 				fref(child->p_files[i]);
 			}
 		}
-
 		/*need to clone the thread, set up the stack, return appropriate value, change eax register, make runnable*/
 		kthread_t * child_thr = kthread_clone(parent_thr);
 		if(!child_thr) {
@@ -190,6 +189,7 @@ do_fork(struct regs *regs)
 		}
 		list_insert_tail(&(child->p_threads), &(child_thr->kt_plink));
 		KASSERT(child_thr->kt_kstack != NULL);
+		dbg(DBG_PRINT, "(GRADING3A 7.a)\n");
 		child_thr->kt_proc = child;
 
 		/* copy page table pointer */
