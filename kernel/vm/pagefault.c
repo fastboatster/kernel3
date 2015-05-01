@@ -98,7 +98,7 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 			return;
 		} else { /* not sure what to do with FAULT_USER/ FAULT_PRESENT */
 			int for_write = 0;
-			if (cause & FAULT_WRITE) {
+			if ((cause & FAULT_WRITE) || ((vmarea->vma_flags & MAP_PRIVATE) && (vmarea->vma_prot & PROT_READ) && (vmarea->vma_prot & PROT_WRITE) )) {
 				for_write = 1;
 			}
 			/*pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result) */
