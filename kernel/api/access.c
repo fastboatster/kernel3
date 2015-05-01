@@ -160,19 +160,30 @@ int
 range_perm(struct proc *p, const void *avaddr, size_t len, int perm)
 {
     /* NOT_YET_IMPLEMENTED("VM: range_perm");*/
-	if(NULL == avaddr) { /*otherswise creates issue in do_stat*/
+if(NULL == avaddr) { /*otherswise creates issue in do_stat*/
 		return 0;
 	}
-	uint32_t start_addr = (uint32_t)avaddr ;
+	/*uint32_t start_addr = (uint32_t)avaddr ;
 	uint32_t end_addr = start_addr + len;
 
-	/* check from start page till end page */
+	 check from start page till end page
 	while(start_addr < end_addr) {
 		if(addr_perm(p, (void *)start_addr, perm) == 0){
 			return 0;
 		}
 		start_addr+=PAGE_SIZE;
-	}
+	}*/
+	/*i think we need to use page aligned address. code above will not work
+	 *  if avaddr is say almsot at the very end of one page
+	 *  and len is so small so just to have avvaddr+ len to be in a next page*/
+	void* st_addr = PAGE_ALIGN_DOWN(avaddr);
+	void * end_addr = PAGE_ALIGN_DOWN((uint32_t)avaddr + len);
+	while(st_addr < end_addr) {
+			if(addr_perm(p, (void *)st_addr, perm) == 0){
+				return 0;
+			}
+			st_addr+=PAGE_SIZE;
+		}
 
   return 1;
 }
