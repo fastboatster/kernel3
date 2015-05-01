@@ -500,8 +500,51 @@ int do_unlink(const char *path) {
  *        from is a directory.
  */
 int do_link(const char *from, const char *to) {
-	NOT_YET_IMPLEMENTED("VFS: do_link");
-	return -1;
+	/*NOT_YET_IMPLEMENTED("VFS: do_link");
+	return -1;*/
+	vnode_t* from_file_vnode;
+		int resp = open_namev(from, O_RDWR, &from_file_vnode, NULL);
+		if(resp < 0) {
+			return resp;
+		}else { /* == 0*/
+			if(S_ISDIR(from_file_vnode->vn_mode)) {
+				vput(from_file_vnode);
+				return -EISDIR;
+			}
+		}
+
+		vnode_t* dir_vnode = NULL;
+		size_t filename_len = 0;
+		const char *filename;
+		int dir_namev_retval = dir_namev(to, &filename_len, &filename, NULL, &dir_vnode);
+		if(dir_namev_retval < 0) {
+			vput(from_file_vnode);
+			return dir_namev_retval;
+		}
+		if(!S_ISDIR(dir_vnode->vn_mode)){
+			vput(from_file_vnode);
+			vput(dir_vnode);
+			return -ENOTDIR;
+		}
+		if(filename_len > 0) { /* ==0*/
+			vnode_t *to_file_vnode = NULL;
+			int lookup_retval = lookup(dir_vnode, filename, filename_len, &to_file_vnode);
+			if(lookup_retval == 0) { /* file found */
+				vput(to_file_vnode);
+				vput(dir_vnode);
+				vput(from_file_vnode);
+				return -EEXIST;
+			}else { /* to file doesnt exists */
+				/* vput(to_file_vnode); */ /* will be NULL */
+				KASSERT(NULL != dir_vnode->vn_ops->link);
+				int res = dir_vnode->vn_ops->link(from_file_vnode, dir_vnode, filename, filename_len);
+				vput(dir_vnode);
+				vput(from_file_vnode);
+				return res;
+			}
+		}
+		vput(dir_vnode);
+		return 0;
 }
 
 /*      o link newname to oldname
@@ -513,8 +556,14 @@ int do_link(const char *from, const char *to) {
  * file could exist).
  */
 int do_rename(const char *oldname, const char *newname) {
-	NOT_YET_IMPLEMENTED("VFS: do_rename");
-	return -1;
+	/*NOT_YET_IMPLEMENTED("VFS: do_rename");
+	return -1;*/
+	int link_resp = do_link(newname, oldname);
+		if(link_resp < 0) {
+			return link_resp;
+		}
+		int unlink_resp = do_unlink(oldname);
+		return unlink_resp;
 }
 
 /* Make the named directory the current process's cwd (current working
