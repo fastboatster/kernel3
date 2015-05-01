@@ -143,10 +143,10 @@ shadow_put(mmobj_t *o)
 				pframe_free(page); /* uncache all the pages */
 			}
 		}list_iterate_end();
-		o->mmo_refcount--;
-		if(o->mmo_refcount == o->mmo_nrespages && o->mmo_refcount == 0) {
-			slab_obj_free(shadow_allocator, o); /* free the object */
-		}
+	}
+	o->mmo_refcount--;
+	if(o->mmo_refcount == 0) {
+		slab_obj_free(shadow_allocator, o); /* free the object */
 	}
 	return;
 }
