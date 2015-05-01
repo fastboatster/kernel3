@@ -144,7 +144,7 @@ void vmmap_destroy(vmmap_t *map) {
 				temp_mmobj = next;
 			}
 			/* last obj */
-			area->vma_obj->mmo_ops->put(temp_mmobj);
+			temp_mmobj->mmo_ops->put(temp_mmobj);
 		} else { /* bottom object */
 			area->vma_obj->mmo_ops->put(area->vma_obj);
 		}
