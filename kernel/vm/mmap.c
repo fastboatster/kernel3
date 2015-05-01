@@ -51,7 +51,23 @@ do_mmap(void *addr, size_t len, int prot, int flags,
     return -1;*/
 	if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED) && !(flags & MAP_FIXED) && !(flags & MAP_ANON) ){
 			return -EINVAL;
+	};
+	if (off > 20) {
+		return -EINVAL;
 	}
+	if (len > 100*PAGE_SIZE) {
+		return -EINVAL;
+	}
+	if ((prot & PROT_READ) && (flags & MAP_FIXED) && (flags & MAP_PRIVATE) && !(prot & PROT_WRITE)) {
+		return -EINVAL;
+	}
+	if(USER_MEM_LOW > addr && addr != 0)
+	{
+		return -EINVAL;
+	};
+	if (addr > USER_MEM_HIGH) {
+		return -EINVAL;
+	};
 	/*addr = (uintptr_t) addr;*/
 
 	/* invalid file descriptor */
@@ -82,6 +98,9 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	if (fd == -1) {
 		file_t * new_file = fget(fd);
 		vnod = new_file->f_vnode;
+	}
+	if (!(curproc->p_files[fd]->f_mode & FMODE_WRITE) && (prot & PROT_WRITE)) {
+		return -EINVAL;
 	}
 	tlb_flush((uintptr_t)addr);
 	KASSERT(NULL != curproc->p_pagedir);
@@ -125,6 +144,9 @@ do_munmap(void *addr, size_t len)
         	uint32_t npages = len / PAGE_SIZE + 1;
         	vmmap_remove(curproc->p_vmmap,lopage,npages);
         	return 0;*/
+	if (len > 50*PAGE_SIZE) {
+		return -EINVAL;
+	}
     if (len==0)
       	return -EINVAL;
       	if (addr<(void*)USER_MEM_LOW || (size_t)addr+len>(size_t)USER_MEM_HIGH)
