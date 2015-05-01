@@ -199,8 +199,13 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 				/*KASSERT(NULL != result);*/
 				dir = result;
 			}
+			
 
 			/*if(1 ==  time_to_break) break;*/
+		}
+		if(plen > NAME_LEN){ /*doesn't get executed*/
+						vput(dir);
+						return -ENAMETOOLONG;
 		}
 		if(!S_ISDIR(dir->vn_mode)){
 			vput(dir);
