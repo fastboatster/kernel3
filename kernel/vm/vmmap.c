@@ -144,8 +144,21 @@ void vmmap_destroy(vmmap_t *map) {
 				temp_mmobj = next;
 			}
 			/* last obj */
+			if(temp_mmobj->mmo_un.mmo_bottom_obj != NULL) {
+				vnode_t *v = CONTAINER_OF((temp_mmobj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
+				if(v->vn_nrespages < v->vn_refcount){
+					vput(v);
+				}
+			}
 			temp_mmobj->mmo_ops->put(temp_mmobj);
+
 		} else { /* bottom object */
+			if(area->vma_obj->mmo_un.mmo_bottom_obj != NULL) {
+				vnode_t *v = CONTAINER_OF((area->vma_obj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
+				if(v->vn_nrespages < v->vn_refcount){
+					vput(v);
+				}
+			}
 			area->vma_obj->mmo_ops->put(area->vma_obj);
 		}
 
@@ -511,6 +524,7 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
 		list_remove(&area->vma_plink);
 		list_remove(&area->vma_olink);
+		area->vma_obj->mmo_ops->put(area->vma_obj);
 		vmarea_free(area);
 		return 0;
 	}
