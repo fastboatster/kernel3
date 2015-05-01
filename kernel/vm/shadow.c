@@ -128,8 +128,7 @@ shadow_put(mmobj_t *o)
     */
 	KASSERT(o && (0 < o->mmo_refcount) && (&shadow_mmobj_ops == o->mmo_ops));
 	dbg(DBG_PRINT, "(GRADING3A 6.c)\n");
-	o->mmo_refcount--;
-	if(o->mmo_refcount == o->mmo_nrespages) { /* mmobj no longer in use */
+	if((o->mmo_refcount-1) == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
 		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 		    while(pframe_is_busy(page)) { /* if the object is busy wait for it */
@@ -140,9 +139,11 @@ shadow_put(mmobj_t *o)
 			} else if(pframe_is_dirty(page)){
 				pframe_clean(page);
 			} else {
+				/* free the page */
 				pframe_free(page); /* uncache all the pages */
 			}
 		}list_iterate_end();
+		o->mmo_refcount--;
 		if(o->mmo_refcount == o->mmo_nrespages && o->mmo_refcount == 0) {
 			slab_obj_free(shadow_allocator, o); /* free the object */
 		}
@@ -244,6 +245,9 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 		pframe_set_dirty(pf);
 		pframe_pin(pf);
 		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
+		return 0;
+	} else {
+		memset(pf->pf_addr, 0, PAGE_SIZE);
 		return 0;
 	}
 	return -1;

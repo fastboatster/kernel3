@@ -86,27 +86,38 @@ sys_read(read_args_t *arg)
 		int bytes_to_read = read_args.nbytes;
 
 		while(num_bytes_read != read_args.nbytes) {
-			void *buffer = page_alloc();
-			KASSERT(buffer != NULL);
+			/*void *buffer = page_alloc();
+			KASSERT(buffer != NULL);*/
 
-			int bytes_read = do_read(read_args.fd, buffer, bytes_to_read);
+			int bytes_read = do_read(read_args.fd, read_args.buf, bytes_to_read);
 
-			if(bytes_read >= 0) { /* read some data */
+			if(bytes_read > 0) { /* read some data */
 				/* copy_to_user(void *uaddr, const void *kaddr, size_t nbytes) */
-				if((err = copy_to_user(read_args.buf+num_bytes_read, buffer, bytes_read)) < 0) {
+			/*	memcpy((void*)((uintptr_t)read_args.buf+num_bytes_read), buffer, bytes_read);*/
+				/*if((err = copy_to_user((void*)((uintptr_t)read_args.buf+num_bytes_read), buffer, bytes_read)) < 0) {
 					page_free(buffer);
 					curthr->kt_errno = -err;
 					return -1;
-				}
-				page_free(buffer);
+				}*/
+				/*page_free(buffer);*/
 				num_bytes_read+= bytes_read;
 				bytes_to_read-= bytes_read;
-			} else { /* no data read */
-				page_free(buffer);
+				read_args.nbytes=bytes_read;
+				copy_to_user(arg, &read_args, sizeof(read_args_t));
+			} else if(bytes_read == 0){ /* no more data to read */
+			/*	page_free(buffer);*/
+				return num_bytes_read;
+			}
+			else{ /* no data read */
+				/*page_free(buffer);*/
 				curthr->kt_errno = -bytes_read;
 				return -1;
 			}
 		}
+		/*if((err = copy_to_user(arg->buf, read_args.buf, num_bytes_read)) < 0) {
+			curthr->kt_errno = -err;
+			return -1;
+		}*/
 		return num_bytes_read; /* num_bytes_read == read_args.nbytes */
 }
 
@@ -180,18 +191,23 @@ sys_getdents(getdents_args_t *arg)
 	/*count = getdents_args.count;*/
 	int count = (getdents_args.count)/sizeof(dirent_t);
 	int do_getdent_retval = -1;
+	int temp_count = count;
 	while(count > 0) {
-		do_getdent_retval = do_getdent(getdents_args.fd, getdents_args.dirp);
-		if(do_getdent_retval < 0) {
-			curthr->kt_errno = do_getdent_retval;
+		int temp = do_getdent(getdents_args.fd, getdents_args.dirp);
+		if(temp == 0) { /* nothing more to read */
+			return 0;
+		}
+		if(temp < 0) {
+			curthr->kt_errno = -temp;
 			return -1;
 		}
 		count--;
+		do_getdent_retval+=temp;
 	}
 	/*
 	 * Not sure what the last part of the comment says.
 	 */
-	return do_getdent_retval;
+	return temp_count*do_getdent_retval;
 
 }
 

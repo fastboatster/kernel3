@@ -460,9 +460,17 @@ initproc_run(int arg1, void *arg2)
 	/*do_open("/dev/tty0", O_RDONLY);
 		do_open("/dev/tty0", O_WRONLY);*/
 
-	char* argv[] = { "sbin/init", NULL};
+/*		char* argv[] = { "sbin/init",NULL};
+		char* envp [] = { NULL };
+		kernel_execve("sbin/init", argv, envp);
+*/
+
+	do_open("/dev/tty0", O_RDONLY);
+	do_open("/dev/tty0", O_WRONLY);
+	char* argv[] = { "/usr/bin/vfstest",NULL};
 	char* envp [] = { NULL };
-	kernel_execve("sbin/init", argv, envp);
+	kernel_execve("/usr/bin/vfstest", argv, envp);
+
 	/*kernel_execve("usr/bin/forkbomb", argv, envp);*/
 
 	/*do_open("/dev/tty0", O_RDONLY);

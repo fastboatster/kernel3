@@ -183,7 +183,11 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			}
 
 			if(plen > 0) { /* empty name */
-				int lookup_resp = lookup(dir, pname, plen, &result);
+				char temp_name[plen+1];
+				memcpy(temp_name, pname, plen);
+				temp_name[plen] = '\0';
+				dbg(DBG_PRINT, "Look for %s\n", temp_name);
+				int lookup_resp = lookup(dir, temp_name, plen, &result);
 				dbg(DBG_PRINT, "(GRADING2A)\n");
 				if(lookup_resp < 0){
 					dbg(DBG_PRINT, "INFO: lookup() failed with ret code (%d)\n", lookup_resp);

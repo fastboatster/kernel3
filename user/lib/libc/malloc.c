@@ -1069,7 +1069,8 @@ malloc(size_t size)
                 return (0);
         }
         if (!malloc_started) {
-                malloc_init();
+        	wrtwarning("Calling malloc init.\n");
+            malloc_init();
         }
         if (malloc_sysv && !size)
                 r = 0;

@@ -47,51 +47,55 @@ int
 do_mmap(void *addr, size_t len, int prot, int flags,
         int fd, off_t off, void **ret)
 {
-        /*NOT_YET_IMPLEMENTED("VM: do_mmap");
-        return -1;*/
-		if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED) && !(flags & MAP_FIXED) && !(flags & MAP_ANON) ){
-				return -EINVAL;
-		}
-		addr = (uintptr_t) addr;
-
-		/* invalid file descriptor */
-    	if((fd < 0 && fd == -1) || fd >= NFILES || curproc->p_files[fd]==NULL) {
-    	     return -EBADF;
-    	}
-    	/* args not valid */
-		if(len == 0 || (PAGE_ALIGNED(addr)==0)) {
+    /*NOT_YET_IMPLEMENTED("VM: do_mmap");
+    return -1;*/
+	if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED) && !(flags & MAP_FIXED) && !(flags & MAP_ANON) ){
 			return -EINVAL;
-		}
-		if( (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED)) || ((flags & MAP_PRIVATE) && (flags & MAP_SHARED)) ){
-			return -EINVAL;
-		}
+	}
+	/*addr = (uintptr_t) addr;*/
 
-		if((flags & MAP_PRIVATE) && !(curproc->p_files[fd]->f_mode & FMODE_READ)){
+	/* invalid file descriptor */
+	if((fd < 0 && fd == -1) || fd >= NFILES || curproc->p_files[fd]==NULL) {
+	     return -EBADF;
+	}
+	/* args not valid */
+	if(len == 0 || (PAGE_ALIGNED(addr)==0)) {
+		return -EINVAL;
+	}
+	if( (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED)) || ((flags & MAP_PRIVATE) && (flags & MAP_SHARED)) ){
+		return -EINVAL;
+	}
+
+	if((flags & MAP_PRIVATE) && !(curproc->p_files[fd]->f_mode & FMODE_READ)){
+		return -EACCES;
+	}
+
+	if((flags & MAP_SHARED) && (prot & PROT_WRITE)) {
+		if( !(curproc->p_files[fd]->f_mode & FMODE_READ) && !(curproc->p_files[fd]->f_mode & FMODE_WRITE) ){
 			return -EACCES;
 		}
+		if(curproc->p_files[fd]->f_mode == FMODE_APPEND){
+			return -EACCES;
+		}
+	}
+	struct vnode* vnod = curproc->p_files[fd]->f_vnode;
+	if (fd == -1) {
+		file_t * new_file = fget(fd);
+		vnod = new_file->f_vnode;
+	}
+	tlb_flush((uintptr_t)addr);
+	KASSERT(NULL != curproc->p_pagedir);
+	dbg(DBG_PRINT, "(GRADING3A 2.a)\n");
+   	/*tlb_flush((uintptr_t)addr);*/
+	/*what should be lopage and npage*/
+	uint32_t lopage = ADDR_TO_PN(addr);
+	uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
+	vmarea_t *new_area;
+	int i = vmmap_map(curproc->p_vmmap, vnod, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, &new_area);
 
-		if((flags & MAP_SHARED) && (prot & PROT_WRITE)) {
-			if( !(curproc->p_files[fd]->f_mode & FMODE_READ) && !(curproc->p_files[fd]->f_mode & FMODE_WRITE) ){
-				return -EACCES;
-			}
-			if(curproc->p_files[fd]->f_mode == FMODE_APPEND){
-				return -EACCES;
-			}
-		}
-		struct vnode* vnod = curproc->p_files[fd]->f_vnode;
-		if (fd == -1) {
-			file_t * new_file = fget(fd);
-			vnod = new_file->f_vnode;
-		}
-       	/*tlb_flush((uintptr_t)addr);*/
-		/*what should be lopage and npage*/
-		uint32_t lopage = ADDR_TO_PN(addr);
-		uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
-		vmarea_t *new_area;
-		int i = vmmap_map(curproc->p_vmmap, vnod, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, &new_area);
-		tlb_flush((uintptr_t)addr);
-		*ret = (uint32_t *)PN_TO_ADDR(new_area->vma_start);
-		return i;
+	*ret = (uint32_t *)PN_TO_ADDR(new_area->vma_start);
+	return i;
+
 }
 
 

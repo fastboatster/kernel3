@@ -71,59 +71,45 @@ do_brk(void *addr, void **ret)
 {
        /* NOT_YET_IMPLEMENTED("VM: do_brk");
         return 0;*/
-        if (addr == NULL){
+        if (addr == NULL || addr == curproc->p_brk){
         		*ret = curproc->p_brk;
         		return 0;
         	}
 
-        	if ((addr < curproc->p_start_brk) || (addr > USER_MEM_HIGH)){
+        	if ((addr < curproc->p_start_brk) || (addr > (void*) USER_MEM_HIGH)){
         		return -ENOMEM;
         	}
-        	vmarea_t * new_area = vmmap_lookup(curproc->p_vmmap, ADDR_TO_PN(curproc->p_brk));
+
+        	uint32_t addr_vfn = ADDR_TO_PN(PAGE_ALIGN_UP(addr));
+        	uint32_t brk_vfn = ADDR_TO_PN(PAGE_ALIGN_UP(curproc->p_brk));
+        	uint32_t start_brk_vfn = ADDR_TO_PN(PAGE_ALIGN_UP(curproc->p_start_brk));
+
+        	uint32_t gap = addr_vfn - brk_vfn;
+        	vmarea_t * new_area = vmmap_lookup(curproc->p_vmmap, start_brk_vfn-1);
         	if (new_area == NULL){/*This should be not be NULL*/
-        		return -1; /* what should we return as error*/
+        		return -ENOMEM; /* what should we return as error*/
         	}
-        	if (addr < curproc->p_brk){
-        		curproc->p_brk = PAGE_ALIGN_UP(addr);
-        		new_area->vma_end = ADDR_TO_PN(PAGE_ALIGN_UP(addr));
+
+        	if(gap  == 0) { /* addr == curproc->p_brk */
         		*ret = curproc->p_brk;
         		return 0;
         	}
-        	if (addr > curproc->p_brk) {
-        		vmarea_t * area = vmmap_lookup(curproc->p_vmmap, ADDR_TO_PN(curproc->p_start_brk));
-        		if (area ==NULL) {
-        			uint32_t lopage = ADDR_TO_PN(PAGE_ALIGN_UP(curproc->p_start_brk));
-        			uint32_t numpages = ADDR_TO_PN(PAGE_ALIGN_UP(addr)) - lopage;
-        			vmmap_map(curproc->p_vmmap, NULL, lopage, numpages,PROT_READ|PROT_WRITE, MAP_PRIVATE, 0, VMMAP_DIR_HILO, NULL);
-        			curproc->p_brk = PAGE_ALIGN_UP(addr);
-        			*ret = curproc->p_brk;
-        		}else {
-        			area->vma_end = ADDR_TO_PN(PAGE_ALIGN_UP(addr));
-        			curproc->p_brk = PAGE_ALIGN_UP(addr);
-        			*ret = curproc->p_brk;
+        	if (addr_vfn < brk_vfn ){ /*shrink */
+        		new_area->vma_end = addr_vfn;
+        		vmmap_remove(curproc->p_vmmap, addr_vfn, -gap);
+        		/*pt_unmap_range(curproc->p_pagedir, (uintptr_t)PAGE_ALIGN_UP(addr), (uintptr_t)PAGE_ALIGN_UP(curproc->p_brk));*/
+        		curproc->p_brk = addr;
+        		*ret = curproc->p_brk;
+        		return 0;
+        	} else { /* expand the size */
+        		if(vmmap_is_range_empty(curproc->p_vmmap, new_area->vma_end, gap)){ /* no mapping */
+        			new_area->vma_end = addr_vfn;
+            		curproc->p_brk = addr;
+            		*ret = curproc->p_brk;
+            		return 0;
+        		} else { /* mapping already exists */
+        			return -ENOMEM;
         		}
         	}
-        /*	uint32_t end_vfn = ADDR_TO_PN(PAGE_ALIGN_UP(addr));
-        	if(end_vfn == new_area->vma_end) { if page-aligned vfn of a new start equals the end of new_area, increment it
-        		end_vfn++;
-        	}
-        	new_area->vma_end = end_vfn;
-        	curproc->p_brk = PAGE_ALIGN_UP(addr);
-        	*ret = curproc->p_brk;*/
-        /*uint32_t start_vfn = ADDR_TO_PN(PAGE_ALIGN_DOWN(curproc->p_brk));*/
-        	/*Check iff the range is empty
-        	int range_ret = vmmap_is_range_empty(curproc->p_vmmap, start_vfn, start_vfn-end_vfn);
-        	if (range_ret){
-        		curproc->p_brk = addr;
-        		new_area->vma_end = ADDR_TO_PN(addr);
-        		*ret = curproc->p_brk;
-        	}
-        	else{There is a mapping, so find the vma_area n set the end to the start of it
-        		vmarea_t * area = vmmap_lookup(curproc->p_vmmap, ADDR_TO_PN(addr));
-        		curproc->p_brk = PN_TO_ADDR(area->vma_start);
-        		new_area->vma_end = area->vma_start;
-        		ret = &curproc->p_brk;
-        	}*/
-
         	return 0;
 }
