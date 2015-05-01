@@ -94,6 +94,10 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	int i = vmmap_map(curproc->p_vmmap, vnod, lopage, npages, prot, flags, off, VMMAP_DIR_HILO, &new_area);
 
 	*ret = (uint32_t *)PN_TO_ADDR(new_area->vma_start);
+	tlb_flush(*ret);
+	void* ret_vfn = ADDR_TO_PN(*ret);
+	void * end_addr = PN_TO_ADDR(ret_vfn + npages);
+	pt_unmap_range(curproc->p_pagedir, *ret, end_addr);
 	return i;
 
 }
