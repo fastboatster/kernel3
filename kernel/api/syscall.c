@@ -207,7 +207,7 @@ sys_getdents(getdents_args_t *arg)
 	/*
 	 * Not sure what the last part of the comment says.
 	 */
-	return temp_count*do_getdent_retval;
+	return temp_count*sizeof(dirent_t);
 
 }
 
