@@ -138,7 +138,8 @@ anon_put(mmobj_t *o)
 				}
 				else {
 					dbg(DBG_PRINT, "(anon7)\n");
-					pframe_free(page);
+					/*pframe_free(page);*/
+					o->mmo_nrespages--;
 				}
 			}list_iterate_end();
 			/*pframe_free(page);*/
