@@ -119,9 +119,11 @@ vmmap_create(void) {
 	 return NULL;*/
 	vmmap_t* map = (vmmap_t*) slab_obj_alloc(vmmap_allocator);
 	if(map) {
+		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 		map->vmm_proc = NULL;
 		list_init(&(map->vmm_list));
 	}
+
 	return map;
 }
 
@@ -130,6 +132,7 @@ vmmap_create(void) {
 void vmmap_destroy(vmmap_t *map) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_destroy");*/
 	KASSERT(NULL != map);
+	dbg(DBG_PRINT, "(GRADING3A 3.a)\n");
 
 	/*list_link_t *link = (&(map->vmm_list))->l_next;
 	for (; link != &(map->vmm_list); link = link->l_next) {*/
@@ -162,6 +165,14 @@ void vmmap_insert(vmmap_t *map, vmarea_t *newvma) {
 
 	uint32_t new_vma_end = newvma->vma_end;
 	uint32_t new_vma_start = newvma->vma_start;
+	KASSERT(NULL != map && NULL != newvma);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+	KASSERT(NULL == newvma->vma_vmmap);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+	KASSERT(newvma->vma_start < newvma->vma_end);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
+	KASSERT(ADDR_TO_PN(USER_MEM_LOW) <= newvma->vma_start && ADDR_TO_PN(USER_MEM_HIGH) >= newvma->vma_end);
+	dbg(DBG_PRINT, "(GRADING3A 3.b)\n");
 	/*find the spot in the vmareas list*/
 	list_link_t *link;
 	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
@@ -170,6 +181,7 @@ void vmmap_insert(vmmap_t *map, vmarea_t *newvma) {
 		uint32_t vma_start = area->vma_start;
 		uint32_t vma_end = area->vma_end;
 		if (new_vma_start < vma_start) {
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			list_insert_before(link, &(newvma->vma_plink));
 			newvma->vma_vmmap = map;
 			return;
@@ -199,14 +211,18 @@ void vmmap_insert(vmmap_t *map, vmarea_t *newvma) {
 int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 
 	KASSERT(NULL != map);
+	dbg(DBG_PRINT, "(GRADING3A 3.c)\n");
 	KASSERT(0 < npages);
+	dbg(DBG_PRINT, "(GRADING3A 3.c)\n");
 	if (dir == VMMAP_DIR_HILO){
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		uint32_t end_vfn = ADDR_TO_PN(USER_MEM_HIGH);
 		vmarea_t *area = NULL;
 		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink) {
 			uint32_t vmarea_end = area->vma_end;
 			uint32_t gap = end_vfn - vmarea_end;
 			if(gap >= npages) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				return end_vfn-npages;
 			}
 			end_vfn = area->vma_start-1;
@@ -222,12 +238,14 @@ int vmmap_find_range(vmmap_t *map, uint32_t npages, int dir) {
 		}*/
 	}
 	if (dir == VMMAP_DIR_LOHI) {
+		dbg(DBG_PRINT, "map5\n");
 		uint32_t start_vfn = ADDR_TO_PN(USER_MEM_LOW);
 		vmarea_t *area = NULL;
 		list_iterate_reverse(&(map->vmm_list), area, vmarea_t, vma_plink) {
 			uint32_t vmarea_start = area->vma_start;
 			uint32_t gap = vmarea_start - start_vfn;
 			if(gap >= npages) {
+				dbg(DBG_PRINT, "map6\n");
 				return start_vfn;
 			}
 			start_vfn = area->vma_end;
@@ -246,7 +264,7 @@ vmarea_t *
 vmmap_lookup(vmmap_t *map, uint32_t vfn) {
 	/* NOT_YET_IMPLEMENTED("VM: vmmap_lookup");*/
 	KASSERT(NULL != map);
-
+	dbg(DBG_PRINT, "(GRADING3A 3.d)\n");
 	list_link_t *link;
 	for (link = (&(map->vmm_list))->l_next; link != &(map->vmm_list); link =
 			link->l_next) {
@@ -254,6 +272,7 @@ vmmap_lookup(vmmap_t *map, uint32_t vfn) {
 		uint32_t vma_start = area->vma_start;
 		uint32_t vma_end = area->vma_end;
 		if (vma_start <= vfn && vfn < vma_end) {
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			return area;
 		}
 	};
@@ -271,6 +290,7 @@ vmmap_clone(vmmap_t *map) {
 	/*allocate a new vmmap:*/
 	vmmap_t *new_map = vmmap_create(); /*vmarea_alloc();*/
 	if (new_map == NULL) {
+		dbg(DBG_PRINT, "map8\n");
 		return NULL; /*couldn't allocate a new map, returning null*/
 	};
 	/*iterate entire list of vmareas of a given memory map, and allocate a new vmarea */
@@ -279,6 +299,7 @@ vmmap_clone(vmmap_t *map) {
 		/*allocate a new vmarea and insert it into the list in new vmmap*/
 		vmarea_t *new_area = vmarea_alloc();
 		if (new_area == NULL) {
+			dbg(DBG_PRINT, "map9\n");
 			return NULL; /*couldn't allocate a new vmarea, return null, maybe need to do a cleanup here*/
 		};
 		/* Hope we need to copy everything */
@@ -328,15 +349,23 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 	*/
 
 	KASSERT(NULL != map);
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT(0 < npages);
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT(!(~(PROT_NONE | PROT_READ | PROT_WRITE | PROT_EXEC) & prot));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT((MAP_SHARED & flags) || (MAP_PRIVATE & flags));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT((0 == lopage) || (ADDR_TO_PN(USER_MEM_LOW) <= lopage));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT((0 == lopage) || (ADDR_TO_PN(USER_MEM_HIGH) >= (lopage + npages)));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	KASSERT(PAGE_ALIGNED(off));
+	dbg(DBG_PRINT, "(GRADING3A 3.f)\n");
 	/*KASSERT(new);*/
 	vmarea_t* new_area  = vmarea_alloc();
 	if(!new_area) {
+		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 		return -1;
 	}
 	new_area->vma_off = off;
@@ -344,14 +373,17 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 	new_area->vma_prot = prot;
 
 	if(!new){
+		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 		new  = vmarea_alloc();
 		if(!new) {
+			dbg(DBG_PRINT, "map12\n");
 			return -1;
 		}
 	}
 
 	mmobj_t *new_mmobj = NULL;
 	if(!lopage) { /* lopage == 0 */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		int start_vfn = vmmap_find_range(map, npages, dir);
 		if(start_vfn < 0) {
 			vmarea_free(new_area);
@@ -361,15 +393,19 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		new_area->vma_end = npages + start_vfn; /* what about 4KB ?? */
 
 		if(file) { /* file */
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			KASSERT(file->vn_ops&& file->vn_ops->mmap);
 			int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_mmobj);
 			if(mmobj_ret < 0){
+				dbg(DBG_PRINT, "map15\n");
 				vmarea_free(new_area);
 				return mmobj_ret;
 			}
 			/*new_mmobj->mmo_ops->ref(new_mmobj); seeems like mmap increaments the ref count */
 		} else { /* anon object */
+			dbg(DBG_PRINT, "map16\n");
 			if((new_mmobj = anon_create()) == NULL) {
+				dbg(DBG_PRINT, "map17\n");
 				vmarea_free(new_area);
 				return -1;
 			}
@@ -378,18 +414,22 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		list_insert_tail(mmobj_bottom_vmas(new_mmobj), &(new_area->vma_olink));
 
 		if(flags & MAP_PRIVATE) { /* shadow object */
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			mmobj_t *new_shadow_obj = NULL;
 			if((new_shadow_obj = shadow_create()) !=NULL) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			   new_shadow_obj->mmo_shadowed = new_mmobj;
 			   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
 			   new_area->vma_obj = new_shadow_obj;
 			   /*list_insert_tail(mmobj_bottom_vmas(new_shadow_obj), &(new_area->vma_olink));*/
 			} else {
+				dbg(DBG_PRINT, "map20\n");
 				new_mmobj->mmo_ops->put(new_mmobj); /*decrement the ref count of the mmobj */
 				vmarea_free(new_area); /* free the VM area */
 				return -1;
 			}
 		} else { /* no shadow object , just the bottom object */
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			new_area->vma_obj = new_mmobj;
 		}
 
@@ -399,10 +439,13 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		*new = new_area;
 		return 0;
 	} else { /* lopage != 0 */
+		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 		int is_range_empty = vmmap_is_range_empty(map, lopage, npages);
 		if(!is_range_empty) {
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			int is_map_removed = vmmap_remove(map, lopage, npages);
 			if(is_map_removed < 0) {
+				dbg(DBG_PRINT, "map24\n");
 				vmarea_free(new_area);
 				return is_map_removed;
 			}
@@ -411,15 +454,19 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		new_area->vma_end = npages + lopage; /* what about 4KB ?? */
 
 		if(file) { /* file */
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			KASSERT(file->vn_ops&& file->vn_ops->mmap);
 			int mmobj_ret = file->vn_ops->mmap(file, new_area, &new_mmobj);
 			if(mmobj_ret < 0){
+				dbg(DBG_PRINT, "map26\n");
 				vmarea_free(new_area);
 				return mmobj_ret;
 			}
 			/*new_mmobj->mmo_ops->ref(new_mmobj);*/
 		} else { /* anon object */
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			if((new_mmobj = anon_create()) == NULL) {
+				dbg(DBG_PRINT, "map28\n");
 				vmarea_free(new_area);
 				return -1;
 			}
@@ -427,18 +474,22 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 		list_insert_tail(mmobj_bottom_vmas(new_mmobj), &(new_area->vma_olink));
 
 		if(flags & MAP_PRIVATE) { /* shadow object */
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			mmobj_t *new_shadow_obj = NULL;
 			if((new_shadow_obj = shadow_create()) !=NULL) {
+				dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			   new_shadow_obj->mmo_shadowed = new_mmobj;
 			   new_shadow_obj->mmo_un.mmo_bottom_obj = new_mmobj;
 			   new_area->vma_obj = new_shadow_obj;
 			   /*list_insert_tail(mmobj_bottom_vmas(new_shadow_obj), &(new_area->vma_olink));*/
 			} else {
+				dbg(DBG_PRINT, "map31\n");
 				new_mmobj->mmo_ops->put(new_mmobj); /*decrement the ref count of the mmobj */
 				vmarea_free(new_area); /* free the VM area */
 				return -1;
 			}
 		} else { /* no shadow object , just the bottom object */
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			new_area->vma_obj = new_mmobj;
 		}
 
@@ -484,6 +535,7 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	/*NOT_YET_IMPLEMENTED("VM: vmmap_remove");*/
 	vmarea_t *area = vmmap_lookup(map, lopage);
 	if(!area) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -1;
 	}
 	uint32_t vmarea_start = area->vma_start;
@@ -491,11 +543,13 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 	uint32_t lopage_end = lopage + npages;
 	/*case 2:*/
 	if (vmarea_start < lopage && vmarea_end <= lopage_end) {
+		dbg(DBG_PRINT, "map34\n");
 		area->vma_end = lopage;
 		return 0;
 	}
 	/*case 4*/
 	if (lopage <= vmarea_start && lopage_end >= vmarea_end) {
+		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 		list_remove(&area->vma_plink);
 		list_remove(&area->vma_olink);
 		area->vma_obj->mmo_ops->put(area->vma_obj);
@@ -507,10 +561,12 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
 		area->vma_start = lopage_end;
 	/*	uint32_t old_offset = area->vma_off;
 		area->vma_off = old_offset + (lopage_end - vmarea_start);*/
+		dbg(DBG_PRINT, "map36\n");
 		return 0;
 	}
 	/*case 1*/
 	if (vmarea_start < lopage && lopage_end < vmarea_end) {
+		dbg(DBG_PRINT, "map37\n");
 		/*allocate 2 new vmareas instead of the old one*/
 		vmarea_t* l_area = vmarea_alloc(); /*area to the left of a removed region*/
 		vmarea_t *r_area = vmarea_alloc(); /*area to the right*/
@@ -551,11 +607,14 @@ int vmmap_remove(vmmap_t *map, uint32_t lopage, uint32_t npages) {
  */
 int vmmap_is_range_empty(vmmap_t *map, uint32_t startvfn, uint32_t npages) {
 	uint32_t endvfn = startvfn + npages;
-
+	KASSERT((startvfn < endvfn) && (ADDR_TO_PN(USER_MEM_LOW) <= startvfn) && (ADDR_TO_PN(USER_MEM_HIGH) >= endvfn));
+	dbg(DBG_PRINT, "(GRADING3A 3.e)\n");
 	vmarea_t *area = NULL;
 	if(!list_empty(&(map->vmm_list))) {
+		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
 		if(area->vma_start <= startvfn && area->vma_end > startvfn ){
+			dbg(DBG_PRINT, "(GRADING3 B.1)\n");
 			return 0;
 		}
 	}list_iterate_end();
@@ -579,6 +638,7 @@ int vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count) {
 	uint32_t vfn = ADDR_TO_PN(addr);
 	vmarea_t *area = vmmap_lookup(map, vfn); /* look up the vmarea vaddr belongs to*/
 	if (area == NULL) {
+		dbg(DBG_PRINT, "map40\n");
 		return -1;
 	}
 	/*look up the page*/
@@ -593,12 +653,14 @@ int vmmap_read(vmmap_t *map, const void *vaddr, void *buf, size_t count) {
 			/*int result = pframe_get(memobj, pagenum, &pg_frame);*/
 			int result = pframe_lookup(memobj, pagenum, 0, &pg_frame);
 			if (result < 0) {
+				dbg(DBG_PRINT, "map41\n");
 				return result;
 			};
 			void *pf_addr = pg_frame->pf_addr;
 			void * new_addr = (void*) ((uintptr_t) pf_addr + offset); /*just so gcc doesn't complain*/
 			int num_to_write = rem_count;
 			if ((PAGE_SIZE - offset) < rem_count) {
+				dbg(DBG_PRINT, "map42\n");
 				num_to_write = PAGE_SIZE - offset;
 				pagenum++;
 				offset = 0;
@@ -641,6 +703,7 @@ int vmmap_write(vmmap_t *map, void *vaddr, const void *buf, size_t count) {
 		void * new_addr = (void*) ((uintptr_t) pf_addr + offset); /*just so gcc doesn't complain*/
 		int num_to_write = rem_count;
 		if ((PAGE_SIZE - offset) < rem_count) {
+			dbg(DBG_PRINT, "map43\n");
 			num_to_write = PAGE_SIZE - offset;
 			pagenum++;
 			offset = 0;
