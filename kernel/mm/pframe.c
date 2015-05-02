@@ -355,18 +355,23 @@ pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
 		/*result = NULL;*/
 		pframe_t* ppage =NULL;
         while((ppage = pframe_get_resident(o, pagenum))==NULL){
+        	dbg(DBG_PRINT, "(pf1)\n");
        /*if page is not found, allocate or call pageoutd*/
         	if(pageoutd_needed()){/*if we need pageoutd to run, wake it up*/
+        		dbg(DBG_PRINT, "(pf2)\n");
         		pageoutd_wakeup();
         		sched_sleep_on(&alloc_waitq);
         		continue;
         	} else {/*allocate a new page*/
+        		dbg(DBG_PRINT, "(pf3)\n");
         		ppage = pframe_alloc(o, pagenum);
         		if(ppage==NULL) {
+        			dbg(DBG_PRINT, "(pf4)\n");
         			return -ENOMEM;
         		}
         		int ret = pframe_fill(ppage);
         		if(ret < 0) {
+        			dbg(DBG_PRINT, "(pf5)\n");
         			pframe_free(ppage);
         			return ret;
         		}
@@ -375,11 +380,12 @@ pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
         	}
         };
        while(pframe_is_busy(ppage)) { /*found but it's busy*/
+    	   dbg(DBG_PRINT, "(pf6)\n");
     	   sched_sleep_on(&(ppage->pf_waitq)); /* wait for it to become not busy*/
        }
        *result = ppage; /*if not busy*/
        return 0;
-}
+}/**/
 
 /*
  * Increases the pin count on this page. Pages with a pin count > 0 will not be
@@ -399,6 +405,7 @@ pframe_pin(pframe_t *pf)
 {
 	int pin_count = pf->pf_pincount;
 	if(pin_count > 0) {
+		dbg(DBG_PRINT, "(pf7)\n");
 		pf->pf_pincount++;
 		return;
 	};
@@ -426,6 +433,7 @@ pframe_unpin(pframe_t *pf)
 {
 	pf->pf_pincount--;
     if(pf->pf_pincount == 0) {
+    	dbg(DBG_PRINT, "(pf8)\n");
     	list_remove(&(pf->pf_link));
     	list_insert_tail(&alloc_list, &(pf->pf_link));
     	npinned--;
