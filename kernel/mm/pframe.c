@@ -403,6 +403,10 @@ pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result)
 void
 pframe_pin(pframe_t *pf)
 {
+	KASSERT(!pframe_is_free(pf));
+	dbg(DBG_PRINT, "(GRADING3A 1.a)\n");
+	KASSERT(pf->pf_pincount >= 0);
+	dbg(DBG_PRINT, "(GRADING3A 1.a)\n");
 	int pin_count = pf->pf_pincount;
 	if(pin_count > 0) {
 		dbg(DBG_PRINT, "(pf7)\n");
@@ -431,6 +435,10 @@ pframe_pin(pframe_t *pf)
 void
 pframe_unpin(pframe_t *pf)
 {
+	KASSERT(!pframe_is_free(pf));
+	dbg(DBG_PRINT, "(GRADING3A 1.b)\n");
+	KASSERT(pf->pf_pincount > 0);
+	dbg(DBG_PRINT, "(GRADING3A 1.b)\n");
 	pf->pf_pincount--;
     if(pf->pf_pincount == 0) {
     	dbg(DBG_PRINT, "(pf8)\n");
