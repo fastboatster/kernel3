@@ -82,23 +82,30 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 	/* get the corresponding vmarea of the current process */
 	vmarea_t *vmarea = vmmap_lookup(curproc->p_vmmap, vaddr_vfn);
 	if(vmarea) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		if((cause & FAULT_RESERVED) && (vmarea->vma_prot == PROT_NONE)) {
+			dbg(DBG_PRINT, "(pg2)\n");
 			proc_kill(curproc, EFAULT);
 			return;
 		}
 		/* fault happened because of exec but it does not have exec permission */
 		else if((cause & FAULT_EXEC) && !(vmarea->vma_prot & PROT_EXEC)) {
+			dbg(DBG_PRINT, "(pg3)\n");
 			proc_kill(curproc, EFAULT);
 			return;
 		} else if((cause & FAULT_WRITE) && !(vmarea->vma_prot & PROT_WRITE)) {
+			dbg(DBG_PRINT, "(pg4)\n");
 			proc_kill(curproc, EFAULT);
 			return;
 		} else if((cause & FAULT_PRESENT) && !(vmarea->vma_prot & PROT_READ)) {
+			dbg(DBG_PRINT, "(pg5)\n");
 			proc_kill(curproc, EFAULT);
 			return;
 		} else { /* not sure what to do with FAULT_USER/ FAULT_PRESENT */
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			int for_write = 0;
 			if ((cause & FAULT_WRITE) || ((vmarea->vma_flags & MAP_PRIVATE) && (vmarea->vma_prot & PROT_READ) && (vmarea->vma_prot & PROT_WRITE) )) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				for_write = 1;
 			}
 			/*pframe_get(struct mmobj *o, uint32_t pagenum, pframe_t **result) */
@@ -107,19 +114,23 @@ handle_pagefault(uintptr_t vaddr, uint32_t cause)
 			/*if(pframe_get(vmarea->vma_obj, pagenum, &new_frame) >= 0) {*/
 			int ret_val = pframe_lookup(vmarea->vma_obj, pagenum, for_write, &new_frame);
 			if(ret_val >=0) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				/*pframe_clear_busy(new_frame);*/
 				uintptr_t paddr = pt_virt_to_phys((uintptr_t)new_frame->pf_addr); /* gives the physical address */
 				dbg(DBG_PRINT, "Page Align down = %d, normal conversion = %d\n",(uintptr_t)PAGE_ALIGN_DOWN(vaddr), (uintptr_t)PN_TO_ADDR(ADDR_TO_PN(vaddr)));
 				dbg(DBG_PRINT, "Page_offset = %d, pagenum = %d\n", PAGE_OFFSET(vaddr), pagenum);
 				if(pt_map(curproc->p_pagedir, (uintptr_t)PAGE_ALIGN_DOWN(vaddr), paddr, PD_PRESENT|PD_WRITE|PD_USER, PT_PRESENT|PT_WRITE|PT_USER) < 0) {
+					dbg(DBG_PRINT, "(pg9)\n");
 					return;
 				}
 				sched_broadcast_on(&new_frame->pf_waitq);
 				return;/* this helps the waiting process to wake up */
 			} else if(-ENOMEM == ret_val){
+				dbg(DBG_PRINT, "(GRADING3 D.4)\n");
 				proc_kill(curproc, EFAULT);
 				return;
 			} else{
+				dbg(DBG_PRINT, "(pg11)\n");
 				return;
 			}
 		}
