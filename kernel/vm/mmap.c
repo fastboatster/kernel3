@@ -47,8 +47,8 @@ int
 do_mmap(void *addr, size_t len, int prot, int flags,
         int fd, off_t off, void **ret)
 {
-    /*NOT_YET_IMPLEMENTED("VM: do_mmap");
-    return -1;*/
+	/*NOT_YET_IMPLEMENTED("VM: do_mmap");
+    	return -1;*/
 	if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED) && !(flags & MAP_FIXED) && !(flags & MAP_ANON) ){
 			return -EINVAL;
 	};
@@ -71,13 +71,24 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	/*addr = (uintptr_t) addr;*/
 
 	/* invalid file descriptor */
-	if((fd < 0 && fd == -1) || fd >= NFILES || curproc->p_files[fd]==NULL) {
+	if((fd < 0 && fd != -1) || fd >= NFILES || curproc->p_files[fd]==NULL) {
 	     return -EBADF;
 	}
 	/* args not valid */
 	if(len == 0 || (PAGE_ALIGNED(addr)==0)) {
 		return -EINVAL;
 	}
+
+	struct vnode* vnod;
+	file_t * new_file;
+	if (fd == -1) {
+		new_file = fget(fd);
+		vnod = new_file->f_vnode;
+		new_file->f_mode = FMODE_READ | FMODE_WRITE;
+	} else { /* +ve */
+		new_file = curproc->p_files[fd];
+	}
+
 	if( (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED)) || ((flags & MAP_PRIVATE) && (flags & MAP_SHARED)) ){
 		return -EINVAL;
 	}
@@ -87,19 +98,16 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	}
 
 	if((flags & MAP_SHARED) && (prot & PROT_WRITE)) {
-		if( !(curproc->p_files[fd]->f_mode & FMODE_READ) && !(curproc->p_files[fd]->f_mode & FMODE_WRITE) ){
+		if( !(new_file->f_mode & FMODE_READ) && !(new_file->f_mode & FMODE_WRITE) ){
 			return -EACCES;
 		}
-		if(curproc->p_files[fd]->f_mode == FMODE_APPEND){
+		if(new_file->f_mode == FMODE_APPEND){
 			return -EACCES;
 		}
 	}
-	struct vnode* vnod = curproc->p_files[fd]->f_vnode;
-	if (fd == -1) {
-		file_t * new_file = fget(fd);
-		vnod = new_file->f_vnode;
-	}
-	if (!(curproc->p_files[fd]->f_mode & FMODE_WRITE) && (prot & PROT_WRITE)) {
+	vnod = new_file->f_vnode;
+
+	if (!(new_file->f_mode & FMODE_WRITE) && (prot & PROT_WRITE)) {
 		return -EINVAL;
 	}
 	tlb_flush((uintptr_t)addr);
@@ -118,6 +126,7 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	void * end_addr = PN_TO_ADDR(ret_vfn + npages);
 	pt_unmap_range(curproc->p_pagedir, *ret, end_addr);
 	return i;
+
 
 }
 
