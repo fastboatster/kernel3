@@ -136,13 +136,14 @@ fail:
 int
 addr_perm(struct proc *p, const void *vaddr, int perm)
 {
+	dbg(DBG_PRINT, "ACC1\n");
     vmmap_t* map = p->p_vmmap;
-
     uint32_t vfn = ADDR_TO_PN((uint32_t)vaddr);
     vmarea_t *area = vmmap_lookup(map, vfn);
     int area_perm = area->vma_prot;
     if (area_perm & perm) {
-   	 return 1;
+    	dbg(DBG_PRINT, "ACC2\n");
+    	return 1;
     }
     return 0;
 }
@@ -160,26 +161,21 @@ int
 range_perm(struct proc *p, const void *avaddr, size_t len, int perm)
 {
     /* NOT_YET_IMPLEMENTED("VM: range_perm");*/
-if(NULL == avaddr) { /*otherswise creates issue in do_stat*/
+	dbg(DBG_PRINT, "(GRADING3D)\n");
+if(NULL == avaddr) {
+	dbg(DBG_PRINT, "(GRADING3D 2)\n");/*otherswise creates issue in do_stat*/
 		return 0;
 	}
-	/*uint32_t start_addr = (uint32_t)avaddr ;
-	uint32_t end_addr = start_addr + len;
 
-	 check from start page till end page
-	while(start_addr < end_addr) {
-		if(addr_perm(p, (void *)start_addr, perm) == 0){
-			return 0;
-		}
-		start_addr+=PAGE_SIZE;
-	}*/
 	/*i think we need to use page aligned address. code above will not work
 	 *  if avaddr is say almsot at the very end of one page
 	 *  and len is so small so just to have avvaddr+ len to be in a next page*/
 	void* st_addr = PAGE_ALIGN_DOWN(avaddr);
 	void * end_addr = PAGE_ALIGN_DOWN((uint32_t)avaddr + len);
 	while(st_addr < end_addr) {
+		dbg(DBG_PRINT, "ACC5\n");
 			if(addr_perm(p, (void *)st_addr, perm) == 0){
+				dbg(DBG_PRINT, "ACC6\n");
 				return 0;
 			}
 			st_addr+=PAGE_SIZE;
