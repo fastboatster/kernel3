@@ -97,6 +97,7 @@ do_fork(struct regs *regs)
 		/*Clone the vmmap and adjust the shadow objects*/
 		child->p_vmmap = vmmap_clone(parent->p_vmmap);
 		if(!child->p_vmmap) {
+			dbg(DBG_PRINT, "(fork1)\n");
 			pt_destroy_pagedir(child->p_pagedir);
 			list_remove(&(child->p_list_link));
 			list_remove(&(child->p_child_link));
@@ -111,9 +112,11 @@ do_fork(struct regs *regs)
 			c_area = list_item(link , vmarea_t, vma_plink);
 			if((p_area->vma_flags & MAP_PRIVATE)) { /*Private Obj*/
 				/* create a shadow object for parent and adjust the pointers */
+				dbg(DBG_PRINT, "(GRADING3 B.4)\n");
 				mmobj_t *p_old_mmobj = p_area->vma_obj;
 				mmobj_t *p_shadow_obj = shadow_create();
 				if(!p_shadow_obj) {
+					dbg(DBG_PRINT, "(fork3)\n");
 					pt_destroy_pagedir(child->p_pagedir);
 					list_remove(&(child->p_list_link));
 					list_remove(&(child->p_child_link));
@@ -127,6 +130,7 @@ do_fork(struct regs *regs)
 
 				mmobj_t *c_shadow_obj = shadow_create();
 				if(!c_shadow_obj) {
+					dbg(DBG_PRINT, "(fork4)\n");
 					pt_destroy_pagedir(child->p_pagedir);
 					list_remove(&(child->p_list_link));
 					list_remove(&(child->p_child_link));
@@ -143,6 +147,7 @@ do_fork(struct regs *regs)
 				/*p_old_mmobj->mmo_un.mmo_bottom_obj->mmo_ops->put(p_old_mmobj->mmo_un.mmo_bottom_obj);*/
 				list_insert_tail(mmobj_bottom_vmas(p_old_mmobj->mmo_un.mmo_bottom_obj), &(c_area->vma_olink));
 			} else { /*shared object */
+				dbg(DBG_PRINT, "(fork5)\n");
 				c_area->vma_obj = p_area->vma_obj;
 				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
 			}
@@ -172,8 +177,10 @@ do_fork(struct regs *regs)
 
 		int i;
 		for (i = 0;i < NFILES; i++) {
+			dbg(DBG_PRINT, "(GRADING3 B.4)\n");
 			child->p_files[i] = parent->p_files[i];
 			if(child->p_files[i]) { /* not all the file descriptors point to a file, some may be NULL */
+				dbg(DBG_PRINT, "(GRADING3 B.4)\n");
 				fref(child->p_files[i]);
 			}
 		}
@@ -181,6 +188,7 @@ do_fork(struct regs *regs)
 		/*need to clone the thread, set up the stack, return appropriate value, change eax register, make runnable*/
 		kthread_t * child_thr = kthread_clone(parent_thr);
 		if(!child_thr) {
+			dbg(DBG_PRINT, "(fork8)\n");
 			pt_destroy_pagedir(child->p_pagedir);
 			list_remove(&(child->p_list_link));
 			list_remove(&(child->p_child_link));
@@ -190,6 +198,7 @@ do_fork(struct regs *regs)
 		}
 		list_insert_tail(&(child->p_threads), &(child_thr->kt_plink));
 		KASSERT(child_thr->kt_kstack != NULL);
+		dbg(DBG_PRINT, "(GRADING3A 7.a)\n");
 		child_thr->kt_proc = child;
 
 		/* copy page table pointer */
