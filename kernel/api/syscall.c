@@ -73,11 +73,12 @@ sys_read(read_args_t *arg)
         NOT_YET_IMPLEMENTED("VM: sys_read");
         return -1;
         */
-
+		dbg(DBG_PRINT, "(GRADING3D 2)\n");
 		read_args_t read_args;
 		int	err;
 		/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
 		if ((err = copy_from_user(&read_args, arg, sizeof(read_args_t))) < 0) {
+			dbg(DBG_PRINT, "SYS2\n");
 				curthr->kt_errno = -err;
 				return -1;
 		}
@@ -88,10 +89,11 @@ sys_read(read_args_t *arg)
 		while(num_bytes_read != read_args.nbytes) {
 			/*void *buffer = page_alloc();
 			KASSERT(buffer != NULL);*/
-
+			dbg(DBG_PRINT, "(GRADING3D 2)\n");
 			int bytes_read = do_read(read_args.fd, read_args.buf, bytes_to_read);
 
-			if(bytes_read > 0) { /* read some data */
+			if(bytes_read > 0) {
+				dbg(DBG_PRINT, "(GRADING3D 2)\n");/* read some data */
 				/* copy_to_user(void *uaddr, const void *kaddr, size_t nbytes) */
 			/*	memcpy((void*)((uintptr_t)read_args.buf+num_bytes_read), buffer, bytes_read);*/
 				/*if((err = copy_to_user((void*)((uintptr_t)read_args.buf+num_bytes_read), buffer, bytes_read)) < 0) {
@@ -106,10 +108,12 @@ sys_read(read_args_t *arg)
 				copy_to_user(arg, &read_args, sizeof(read_args_t));
 			} else if(bytes_read == 0){ /* no more data to read */
 			/*	page_free(buffer);*/
+				dbg(DBG_PRINT, "(GRADING3D 2)\n");
 				return num_bytes_read;
 			}
 			else{ /* no data read */
 				/*page_free(buffer);*/
+				dbg(DBG_PRINT, "(GRADING3D 2)\n");
 				curthr->kt_errno = -bytes_read;
 				return -1;
 			}
@@ -131,11 +135,13 @@ sys_write(write_args_t *arg)
         NOT_YET_IMPLEMENTED("VM: sys_write");
         return -1;
     */
+	dbg(DBG_PRINT, "(GRADING3D)\n");
 	write_args_t write_args;
 	int err;
 	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
 	if ((err = copy_from_user(&write_args, arg, sizeof(write_args_t))) < 0) {
-			curthr->kt_errno = -err;
+		dbg(DBG_PRINT, "SYS8\n");
+		curthr->kt_errno = -err;
 			return -1;
 	}
 
@@ -143,19 +149,23 @@ sys_write(write_args_t *arg)
 	int num_bytes_wrote = 0;
 
 	while(bytes_to_write > 0) {
+		dbg(DBG_PRINT, "(GRADING3D)\n");
 		void *buffer = page_alloc();
 		KASSERT(buffer != NULL);
 		if((err = copy_from_user(buffer, write_args.buf, bytes_to_write)) < 0) {
 			curthr->kt_errno = -err;
+			dbg(DBG_PRINT, "SYS10\n");
 			return -1;
 		}
 		/* buffer has the data */
 		int bytes_wrote = do_write(write_args.fd, buffer, bytes_to_write);
 		if(bytes_wrote >= 0) {
+			dbg(DBG_PRINT, "(GRADING3D)\n");
 			num_bytes_wrote+= bytes_wrote;
 			bytes_to_write-=bytes_wrote;
 			page_free(buffer);
 		} else {
+			dbg(DBG_PRINT, "(GRADING3D 2)\n");
 			page_free(buffer);
 			curthr->kt_errno = -bytes_wrote;
 			return -1;
@@ -180,11 +190,13 @@ sys_getdents(getdents_args_t *arg)
         NOT_YET_IMPLEMENTED("VM: sys_getdents");
         return -1;
      */
+	dbg(DBG_PRINT, "(GRADING3D)\n");
 	getdents_args_t getdents_args;
 	int err;
 	/* int copy_from_user(void *kaddr, const void *uaddr, size_t nbytes) */
 	if ((err = copy_from_user(&getdents_args, arg, sizeof(getdents_args_t))) < 0) {
-			curthr->kt_errno = -err;
+		dbg(DBG_PRINT, "SYS14\n");
+		curthr->kt_errno = -err;
 			return -1;
 	}
 
@@ -193,11 +205,14 @@ sys_getdents(getdents_args_t *arg)
 	int do_getdent_retval = -1;
 	int temp_count = count;
 	while(count > 0) {
+		dbg(DBG_PRINT, "(GRADING3D)\n");
 		int temp = do_getdent(getdents_args.fd, getdents_args.dirp);
 		if(temp == 0) { /* nothing more to read */
+			dbg(DBG_PRINT, "(GRADING3D)\n");
 			return 0;
 		}
 		if(temp < 0) {
+			dbg(DBG_PRINT, "(GRADING3D 2)\n");
 			curthr->kt_errno = -temp;
 			return -1;
 		}
