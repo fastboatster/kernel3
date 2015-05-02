@@ -88,6 +88,7 @@ shadow_create()
     */
 	mmobj_t *new_mmobj = (mmobj_t*)slab_obj_alloc(shadow_allocator);
 	if(new_mmobj) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		mmobj_init(new_mmobj, &shadow_mmobj_ops);
 		new_mmobj->mmo_un.mmo_bottom_obj = NULL;
 		new_mmobj->mmo_refcount++;
@@ -129,17 +130,23 @@ shadow_put(mmobj_t *o)
 	KASSERT(o && (0 < o->mmo_refcount) && (&shadow_mmobj_ops == o->mmo_ops));
 	dbg(DBG_PRINT, "(GRADING3A 6.c)\n");
 	if((o->mmo_refcount-1) == o->mmo_nrespages) { /* mmobj no longer in use */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		if(!(list_empty(&(o->mmo_respages)))) {
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			pframe_t *page = NULL;
 			list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 				while(pframe_is_busy(page)) { /* if the object is busy wait for it */
+					dbg(DBG_PRINT, "(shadow4)\n");
 					sched_sleep_on(&(page->pf_waitq)); /* wait for it to become not busy*/
 				}
 				if(pframe_is_pinned(page)) {
+					dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 					pframe_unpin(page);
 				} else if(pframe_is_dirty(page)){
+					dbg(DBG_PRINT, "(shadow6)\n");
 					pframe_clean(page);
 				} else {
+					dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 					/* free the page */
 					pframe_free(page);/* uncache all the pages */
 				}
@@ -149,6 +156,7 @@ shadow_put(mmobj_t *o)
 	}
 	o->mmo_refcount--;
 	if(o->mmo_refcount == 0) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		slab_obj_free(shadow_allocator, o); /* free the object */
 	}
 	return;
@@ -171,16 +179,22 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
         return 0;
     */
 	if(forwrite) { /* copy-on-write */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		pframe_get(o, pagenum, pf);
 		return 0;
 	} else { /* no copy on write */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		pframe_t* page = NULL;
 		mmobj_t* temp_mmobj = o;
 		if(temp_mmobj->mmo_shadowed) { /* look for all shadowed object */
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			while(temp_mmobj->mmo_shadowed) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				page = pframe_get_resident(temp_mmobj, pagenum);
 				if(page) {
+					dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 					 while (pframe_is_busy(page)) {
+						 dbg(DBG_PRINT, "(shadow14)\n");
 						 sched_sleep_on(&page->pf_waitq);
 					 }
 					 *pf = page;
@@ -191,12 +205,15 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 			/* object not found in any of the shadowed object, check in bottom object */
 			pframe_get(temp_mmobj, pagenum, &page);
 			if(page) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				 *pf = page;
 				return 0;
 			}
 		} else { /* not a shadowed object */
+			dbg(DBG_PRINT, "(shadow16)\n");
 			pframe_get(temp_mmobj, pagenum, &page);
 			if(page) {
+				dbg(DBG_PRINT, "(shadow17)\n");
 				 *pf = page;
 				return 0;
 			}
@@ -231,9 +248,12 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	pframe_t* page = NULL;
 	mmobj_t *temp = o->mmo_shadowed;
 	if(temp->mmo_shadowed) { /* shadowed object */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		while(temp->mmo_shadowed) {
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			page = pframe_get_resident(temp, pf->pf_pagenum);
 			if(page) {
+				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				break;
 			}
 			temp = temp->mmo_shadowed;
@@ -242,14 +262,17 @@ shadow_fillpage(mmobj_t *o, pframe_t *pf)
 	/* page not found from shadow objects */
 	/* lookup the page, not temp is the bottom most object */
 	if(!page) { /* look for a page in the bottom object */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		page = pframe_get_resident(temp, pf->pf_pagenum);
 	}
 	if(page) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		pframe_set_dirty(pf);
 		pframe_pin(pf);
 		memcpy(pf->pf_addr, page->pf_addr, PAGE_SIZE);
 		return 0;
 	} else {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		memset(pf->pf_addr, 0, PAGE_SIZE);
 		return 0;
 	}
@@ -266,6 +289,7 @@ shadow_dirtypage(mmobj_t *o, pframe_t *pf)
         return -1;
     */
 	if(!pframe_is_dirty(pf)) {
+		dbg(DBG_PRINT, "(shadow24)\n");
 		pframe_set_dirty(pf);
 		return 0;
 	}
@@ -283,13 +307,17 @@ shadow_cleanpage(mmobj_t *o, pframe_t *pf)
 	mmobj_t *temp = o;
 	int found_page = shadow_lookuppage(temp, pf->pf_pagenum, 0, &page);
 	if(found_page < 0) {
+		dbg(DBG_PRINT, "(shadow25)\n");
 		return -1;
 	}
 	if(page) {
+		dbg(DBG_PRINT, "(shadow26)\n");
 		while(pframe_is_busy(pf)){ /* wait for it to become free */
+			dbg(DBG_PRINT, "(shadow27)\n");
 			sched_broadcast_on(&pf->pf_waitq);
 		}
 		if(pframe_is_pinned(pf)){
+			dbg(DBG_PRINT, "(shadow28)\n");
 			pframe_unpin(pf);
 			memcpy(page->pf_addr, pf->pf_addr, PAGE_SIZE);
 			pframe_free(pf);

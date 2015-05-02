@@ -75,6 +75,7 @@ anon_create()
     */
 	mmobj_t *new_anon_obj = (mmobj_t*)slab_obj_alloc(anon_allocator);
 	if(new_anon_obj) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		mmobj_init(new_anon_obj, &anon_mmobj_ops); /* initialize the object */
 		/*anon_ref(new_anon_obj);*/
 		new_anon_obj->mmo_un.mmo_bottom_obj = NULL;
@@ -119,18 +120,24 @@ anon_put(mmobj_t *o)
 	/*o->mmo_ops->put(o);*/
 	/*o->mmo_refcount--;*/
 	if((o->mmo_refcount-1) == o->mmo_nrespages) { /* mmobj no longer in use */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		pframe_t *page = NULL;
 		if(!(list_empty(&(o->mmo_respages)))) {
+			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 			list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
 				while(pframe_is_busy(page)) {
+					dbg(DBG_PRINT, "(anon4)\n");
 					sched_sleep_on(&(page->pf_waitq));
 				}
 				if(pframe_is_pinned(page)) {
+					dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 					pframe_unpin(page);
 				} else if(pframe_is_dirty(page)) {
+					dbg(DBG_PRINT, "(anon6)\n");
 					pframe_clean(page);
 				}
 				else {
+					dbg(DBG_PRINT, "(anon7)\n");
 					pframe_free(page);
 				}
 			}list_iterate_end();
@@ -139,6 +146,7 @@ anon_put(mmobj_t *o)
 	}
 	o->mmo_refcount--;
 	if(o->mmo_refcount == 0) {
+		dbg(DBG_PRINT, "(anon8)\n");
 		slab_obj_free(anon_allocator, o);
 	}
 	return;
@@ -156,6 +164,7 @@ anon_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 	pframe_t* page = NULL;
 	pframe_get(o, pagenum, &page);
 	if(page) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 	    *pf = page;
 	    return 0;
 	}
@@ -173,7 +182,9 @@ anon_fillpage(mmobj_t *o, pframe_t *pf)
         return 0;
     */
 	KASSERT(pframe_is_busy(pf));
+	dbg(DBG_PRINT, "(GRADING3A 4.d)\n");
 	KASSERT(!pframe_is_pinned(pf));
+	dbg(DBG_PRINT, "(GRADING3A 4.d)\n");
 
 	/* get the page from the given frame */
 	/*pframe_t *page = pframe_get_resident(pf->pf_obj,pf->pf_pagenum);
@@ -200,9 +211,11 @@ anon_dirtypage(mmobj_t *o, pframe_t *pf)
         return -1;
     */
 	if(!pframe_is_dirty(pf)) {
+		dbg(DBG_PRINT, "(anon10)\n");
 		pframe_set_dirty(pf);
 	}
 	if(pframe_is_dirty(pf)) {
+		dbg(DBG_PRINT, "(anon11)\n");
 		return 0;
 	}
 	return -1;
