@@ -180,8 +180,7 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
     */
 	if(forwrite) { /* copy-on-write */
 		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
-		pframe_get(o, pagenum, pf);
-		return 0;
+		return pframe_get(o, pagenum, pf);
 	} else { /* no copy on write */
 		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		pframe_t* page = NULL;
@@ -203,7 +202,10 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 				temp_mmobj = temp_mmobj->mmo_shadowed;
 			}
 			/* object not found in any of the shadowed object, check in bottom object */
-			pframe_get(temp_mmobj, pagenum, &page);
+			int temp = pframe_get(temp_mmobj, pagenum, &page);
+			if(temp < 0) {
+				return temp;
+			}
 			if(page) {
 				dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 				 *pf = page;
@@ -211,7 +213,10 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 			}
 		} else { /* not a shadowed object */
 			dbg(DBG_PRINT, "(shadow16)\n");
-			pframe_get(temp_mmobj, pagenum, &page);
+			int temp = pframe_get(temp_mmobj, pagenum, &page);
+			if(temp < 0) {
+				return temp;
+			}
 			if(page) {
 				dbg(DBG_PRINT, "(shadow17)\n");
 				 *pf = page;
