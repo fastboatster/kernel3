@@ -170,8 +170,8 @@ if(NULL == avaddr) {
 	/*i think we need to use page aligned address. code above will not work
 	 *  if avaddr is say almsot at the very end of one page
 	 *  and len is so small so just to have avvaddr+ len to be in a next page*/
-	void* st_addr = PAGE_ALIGN_DOWN(avaddr);
-	void * end_addr = PAGE_ALIGN_DOWN((uint32_t)avaddr + len);
+	uintptr_t* st_addr = PAGE_ALIGN_DOWN(avaddr);
+	uintptr_t * end_addr = PAGE_ALIGN_DOWN((uint32_t)avaddr + len);
 	while(st_addr < end_addr) {
 		dbg(DBG_PRINT, "ACC5\n");
 			if(addr_perm(p, (void *)st_addr, perm) == 0){
