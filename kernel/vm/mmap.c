@@ -50,64 +50,80 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	/*NOT_YET_IMPLEMENTED("VM: do_mmap");
     	return -1;*/
 	if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED) && !(flags & MAP_FIXED) && !(flags & MAP_ANON) ){
+		dbg(DBG_PRINT, "(mm1)\n");
 			return -EINVAL;
 	};
 	if (off > 20) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
 	if (len > 10001*PAGE_SIZE) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
 	if ((prot & PROT_READ) && (flags & MAP_FIXED) && (flags & MAP_PRIVATE) && !(prot & PROT_WRITE)) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
 	if((void*)USER_MEM_LOW > addr && addr != 0)
 	{
+		dbg(DBG_PRINT, "(mm5)\n");
 		return -EINVAL;
 	};
 	if (addr > (void*) USER_MEM_HIGH) {
+		dbg(DBG_PRINT, "(mm6)\n");
 		return -EINVAL;
 	};
 	/*addr = (uintptr_t) addr;*/
 
 	/* invalid file descriptor */
 	if((fd < 0 && fd != -1) || fd >= NFILES || curproc->p_files[fd]==NULL) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 	     return -EBADF;
 	}
 	/* args not valid */
 	if(len == 0 || (PAGE_ALIGNED(addr)==0)) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
 
 	struct vnode* vnod;
 	file_t * new_file;
 	if (fd == -1) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		new_file = fget(fd);
 		vnod = new_file->f_vnode;
 		new_file->f_mode = FMODE_READ | FMODE_WRITE;
 	} else { /* +ve */
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		new_file = curproc->p_files[fd];
 	}
 
 	if( (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED)) || ((flags & MAP_PRIVATE) && (flags & MAP_SHARED)) ){
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
 
 	if((flags & MAP_PRIVATE) && !(curproc->p_files[fd]->f_mode & FMODE_READ)){
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EACCES;
 	}
 
 	if((flags & MAP_SHARED) && (prot & PROT_WRITE)) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		if( !(new_file->f_mode & FMODE_READ) && !(new_file->f_mode & FMODE_WRITE) ){
+			dbg(DBG_PRINT, "(mm14)\n");
 			return -EACCES;
 		}
 		if(new_file->f_mode == FMODE_APPEND){
+			dbg(DBG_PRINT, "(mm15)\n");
 			return -EACCES;
 		}
 	}
 	vnod = new_file->f_vnode;
 
 	if (!(new_file->f_mode & FMODE_WRITE) && (prot & PROT_WRITE)) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
 	tlb_flush((uintptr_t)addr);
@@ -153,14 +169,20 @@ do_munmap(void *addr, size_t len)
         	vmmap_remove(curproc->p_vmmap,lopage,npages);
         	return 0;*/
 	if (len > 50*PAGE_SIZE) {
+		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
 		return -EINVAL;
 	}
-    if (len==0)
-      	return -EINVAL;
+    if (len==0){
+    	dbg(DBG_PRINT, "(GRADING3 D.2)\n");
+    	return -EINVAL;
+    }
       	if (addr<(void*)USER_MEM_LOW || (size_t)addr+len>(size_t)USER_MEM_HIGH)
+      		{dbg(DBG_PRINT, "(GRADING3 D.2)\n");
+      		return -EINVAL;}
+      	if(PAGE_ALIGNED(addr)==0){
+      		dbg(DBG_PRINT, "(mm19)\n");
       		return -EINVAL;
-      	if(PAGE_ALIGNED(addr)==0)
-      		return -EINVAL;
+      	}
        	uint32_t lopage = ADDR_TO_PN(addr);
       	uint32_t npages = (PAGE_SIZE + len-1)/PAGE_SIZE;
       	vmmap_remove(curproc->p_vmmap,lopage,npages);
