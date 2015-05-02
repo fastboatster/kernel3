@@ -72,11 +72,13 @@ do_brk(void *addr, void **ret)
        /* NOT_YET_IMPLEMENTED("VM: do_brk");
         return 0;*/
         if (addr == NULL || addr == curproc->p_brk){
+        	dbg(DBG_PRINT, "(GRADING3 D.2)\n");
         		*ret = curproc->p_brk;
         		return 0;
         	}
 
         	if ((addr < curproc->p_start_brk) || (addr > (void*) USER_MEM_HIGH)){
+        		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
         		return -ENOMEM;
         	}
 
@@ -87,14 +89,18 @@ do_brk(void *addr, void **ret)
         	uint32_t gap = addr_vfn - brk_vfn;
         	vmarea_t * new_area = vmmap_lookup(curproc->p_vmmap, start_brk_vfn-1);
         	if (new_area == NULL){/*This should be not be NULL*/
+        		dbg(DBG_PRINT, "(brk3)\n");
         		return -ENOMEM; /* what should we return as error*/
         	}
 
         	if(gap  == 0) { /* addr == curproc->p_brk */
+
+        		dbg(DBG_PRINT, "(brk4)\n");
         		*ret = curproc->p_brk;
         		return 0;
         	}
         	if (addr_vfn < brk_vfn ){ /*shrink */
+        		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
         		new_area->vma_end = addr_vfn;
         		vmmap_remove(curproc->p_vmmap, addr_vfn, -gap);
         		/*pt_unmap_range(curproc->p_pagedir, (uintptr_t)PAGE_ALIGN_UP(addr), (uintptr_t)PAGE_ALIGN_UP(curproc->p_brk));*/
@@ -102,12 +108,15 @@ do_brk(void *addr, void **ret)
         		*ret = curproc->p_brk;
         		return 0;
         	} else { /* expand the size */
+        		dbg(DBG_PRINT, "(GRADING3 D.2)\n");
         		if(vmmap_is_range_empty(curproc->p_vmmap, new_area->vma_end, gap)){ /* no mapping */
+        			dbg(DBG_PRINT, "(GRADING3 D.2)\n");
         			new_area->vma_end = addr_vfn;
             		curproc->p_brk = addr;
             		*ret = curproc->p_brk;
             		return 0;
         		} else { /* mapping already exists */
+        			dbg(DBG_PRINT, "(brk8)\n");
         			return -ENOMEM;
         		}
         	}
