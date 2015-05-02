@@ -445,6 +445,22 @@ static int args_test(kshell_t* kshell, int argc, char** argv){
 	return 0;
 }
 
+static void *fork() {
+	char* argv[] = { NULL };
+	char* envp [] = { NULL };
+	kernel_execve("/usr/bin/fork-and-wait", argv, envp);
+	return 0;
+}
+
+static int forknwait(kshell_t* kshell, int argc, char** argv){
+	proc_t *forkproc = proc_create("fork");
+	KASSERT(NULL != forkproc);
+	kthread_t *fork_thr = kthread_create(forkproc, fork, 1, NULL);
+	KASSERT(NULL != fork_thr);
+	sched_make_runnable(fork_thr);
+	while(do_waitpid(-1, 0, NULL) != -ECHILD);
+	return 0;
+}
 
 static void *
 initproc_run(int arg1, void *arg2)
@@ -460,19 +476,23 @@ initproc_run(int arg1, void *arg2)
 	/*do_open("/dev/tty0", O_RDONLY);
 		do_open("/dev/tty0", O_WRONLY);*/
 
-/*		char* argv[] = { "sbin/init",NULL};
+/*	char* argv[] = { "sbin/init",NULL};
 		char* envp [] = { NULL };
 		kernel_execve("sbin/init", argv, envp);
 */
-
+/*
 	do_open("/dev/tty0", O_RDONLY);
 	do_open("/dev/tty0", O_WRONLY);
-	char* argv[] = { "/usr/bin/vfstest",NULL};
+	char* argv[] = { "/usr/bin/memtest",NULL};
 	char* envp [] = { NULL };
-	kernel_execve("/usr/bin/vfstest", argv, envp);
+	kernel_execve("/usr/bin/memtest", argv, envp);
+*/
 
-	/*kernel_execve("usr/bin/forkbomb", argv, envp);*/
-
+	/*
+	char* argv[] = { "usr/bin/forkbomb",NULL};
+	char* envp [] = { NULL };
+	kernel_execve("usr/bin/forkbomb", argv, envp);
+*/
 	/*do_open("/dev/tty0", O_RDONLY);
 	do_open("/dev/tty0", O_WRONLY);
 	char* argv[] = { "/bin/uname", "-a", NULL };
@@ -486,21 +506,29 @@ initproc_run(int arg1, void *arg2)
 	char* envp [] = { NULL };
 	kernel_execve("/usr/bin/args", argv, envp); */
 
-	dbg(DBG_PRINT, "(GRADING1B)\n");
+	#if CS402INITCHOICE > 0 /* kshell */
+		dbg(DBG_PRINT, "(GRADING1B)\n");
 
-	kshell_add_command("faber_test", my_faber_thread_test, "Run faber_thread_test()");
-	kshell_add_command("sunghan_test", my_sunghan_test, "Run sunghan_test().");
-	kshell_add_command("sunghan_deadlock", my_sunghan_deadlock_test, "Run sunghan_deadlock_test().");
-    kshell_add_command("vfstest",vfs_test, "Run vfs test");
-    kshell_add_command("fs_thread_test",faber_fs_thread_test, "Run faber fs thread test.");
-    kshell_add_command("directory_test",faber_directory_test, "Run faber directory test.");
-    kshell_add_command("hello", hello_test, "Run hello user program.");
-    kshell_add_command("uname", uname_test, "Run uname user program.");
-    kshell_add_command("args", args_test, "Run args user program.");
-	kshell_t *kshell = kshell_create(0);
-    if (NULL == kshell) panic("init: Couldn't create kernel shell\n");
-    while (kshell_execute_next(kshell));
-    kshell_destroy(kshell);
+		kshell_add_command("faber_test", my_faber_thread_test, "Run faber_thread_test()");
+		kshell_add_command("sunghan_test", my_sunghan_test, "Run sunghan_test().");
+		kshell_add_command("sunghan_deadlock", my_sunghan_deadlock_test, "Run sunghan_deadlock_test().");
+		kshell_add_command("vfstest",vfs_test, "Run vfs test");
+		kshell_add_command("fs_thread_test",faber_fs_thread_test, "Run faber fs thread test.");
+		kshell_add_command("directory_test",faber_directory_test, "Run faber directory test.");
+		kshell_add_command("hello", hello_test, "Run hello user program.");
+		kshell_add_command("uname", uname_test, "Run uname user program.");
+		kshell_add_command("args", args_test, "Run args user program.");
+		kshell_add_command("fork", forknwait, "Run fork and wait user program.");
+		kshell_t *kshell = kshell_create(0);
+		if (NULL == kshell) panic("init: Couldn't create kernel shell\n");
+		while (kshell_execute_next(kshell));
+		kshell_destroy(kshell);
+	#else /* user space shell */
+		char* argv[] = { "sbin/init",NULL};
+		char* envp [] = { NULL };
+		kernel_execve("sbin/init", argv, envp);
+	#endif
+
 
 #else
     my_faber_thread_test(NULL, NULL, NULL);

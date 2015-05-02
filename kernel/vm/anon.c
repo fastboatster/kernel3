@@ -118,25 +118,28 @@ anon_put(mmobj_t *o)
 	dbg(DBG_PRINT, "(GRADING3A 4.c)\n");
 	/*o->mmo_ops->put(o);*/
 	/*o->mmo_refcount--;*/
-	if((o->mmo_refcount-1)== o->mmo_nrespages) { /* mmobj no longer in use */
+	if((o->mmo_refcount-1) == o->mmo_nrespages) { /* mmobj no longer in use */
 		pframe_t *page = NULL;
-		list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
-		    while(pframe_is_busy(page)) {
-		    	sched_sleep_on(&(page->pf_waitq));
-		    }
-			if(pframe_is_pinned(page)) {
-				pframe_unpin(page);
-			} else if(pframe_is_dirty(page)){
-				pframe_clean(page);
-			} else {
-				pframe_free(page); /* uncache all the pages */
-			}
-		}list_iterate_end();
-		/*slab_obj_free(anon_allocator, o);*/ /* free the object */
+		if(!(list_empty(&(o->mmo_respages)))) {
+			list_iterate_begin(&o->mmo_respages, page, pframe_t, pf_olink) {
+				while(pframe_is_busy(page)) {
+					sched_sleep_on(&(page->pf_waitq));
+				}
+				if(pframe_is_pinned(page)) {
+					pframe_unpin(page);
+				} else if(pframe_is_dirty(page)) {
+					pframe_clean(page);
+				}
+				else {
+					pframe_free(page);
+				}
+			}list_iterate_end();
+			/*pframe_free(page);*/
+		}
 	}
 	o->mmo_refcount--;
 	if(o->mmo_refcount == 0) {
-		slab_obj_free(anon_allocator, o); /* free the object */
+		slab_obj_free(anon_allocator, o);
 	}
 	return;
 }

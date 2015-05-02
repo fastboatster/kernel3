@@ -136,34 +136,7 @@ void vmmap_destroy(vmmap_t *map) {
 	vmarea_t* area = NULL;
 	list_iterate_begin(&(map->vmm_list), area, vmarea_t, vma_plink){
 
-		if(area->vma_obj->mmo_shadowed) { /* shadowed object */
-			mmobj_t* temp_mmobj = area->vma_obj;
-			while(temp_mmobj && temp_mmobj->mmo_shadowed) {
-				mmobj_t* next = temp_mmobj->mmo_shadowed;
-				temp_mmobj->mmo_ops->put(temp_mmobj);
-				temp_mmobj = next;
-			}
-			/* last obj */
-			if(temp_mmobj->mmo_un.mmo_bottom_obj != NULL) {
-				vnode_t *v = CONTAINER_OF((temp_mmobj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
-				if(v->vn_nrespages < v->vn_refcount){
-					vput(v);
-				}
-			}
-			temp_mmobj->mmo_ops->put(temp_mmobj);
-
-		} else { /* bottom object */
-			if(area->vma_obj->mmo_un.mmo_bottom_obj != NULL) {
-				vnode_t *v = CONTAINER_OF((area->vma_obj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
-				if(v->vn_nrespages < v->vn_refcount){
-					vput(v);
-				}
-			}
-			area->vma_obj->mmo_ops->put(area->vma_obj);
-		}
-
-		/*area->vma_obj->mmo_ops->put(area->vma_obj);*/
-/*
+		/*
 		if(area->vma_obj->mmo_un.mmo_bottom_obj != NULL) {
 			vnode_t *v = CONTAINER_OF((area->vma_obj->mmo_un.mmo_bottom_obj), vnode_t, vn_mmobj);
 			if(v->vn_nrespages < v->vn_refcount){
@@ -171,6 +144,7 @@ void vmmap_destroy(vmmap_t *map) {
 			}
 		}*/
 
+		area->vma_obj->mmo_ops->put(area->vma_obj);
 
 		list_remove(&area->vma_plink);
 		/*list_remove(&area->vma_olink);*/
@@ -324,7 +298,7 @@ vmmap_clone(vmmap_t *map) {
 /* Insert a mapping into the map starting at lopage for npages pages.
  * If lopage is zero, we will find a range of virtual addresses in the
  * process that is big enough, by using vmmap_find_range with the same
- * dir argument.  If lopage is non-zero and the specified region
+ * dir argumeant.  If lopage is non-zero and the specified region
  * contains another mapping that mapping should be unmapped.
  *
  * If file is NULL an anon mmobj will be used to create a mapping

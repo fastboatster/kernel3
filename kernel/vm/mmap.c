@@ -55,7 +55,7 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	if (off > 20) {
 		return -EINVAL;
 	}
-	if (len > 100*PAGE_SIZE) {
+	if (len > 10001*PAGE_SIZE) {
 		return -EINVAL;
 	}
 	if ((prot & PROT_READ) && (flags & MAP_FIXED) && (flags & MAP_PRIVATE) && !(prot & PROT_WRITE)) {

@@ -142,7 +142,7 @@ do_fork(struct regs *regs)
 				/* decrement the refcount of bottom object */
 				/*p_old_mmobj->mmo_un.mmo_bottom_obj->mmo_ops->put(p_old_mmobj->mmo_un.mmo_bottom_obj);*/
 				list_insert_tail(mmobj_bottom_vmas(p_old_mmobj->mmo_un.mmo_bottom_obj), &(c_area->vma_olink));
-			} else{
+			} else { /*shared object */
 				c_area->vma_obj = p_area->vma_obj;
 				c_area->vma_obj->mmo_ops->ref(c_area->vma_obj);
 			}
