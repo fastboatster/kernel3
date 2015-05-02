@@ -374,7 +374,7 @@ int vmmap_map(vmmap_t *map, vnode_t *file, uint32_t lopage, uint32_t npages,
 
 	if(!new){
 		dbg(DBG_PRINT, "(GRADING3 B.1)\n");
-		*new  = vmarea_alloc();
+		new  = vmarea_alloc();
 		if(!new) {
 			dbg(DBG_PRINT, "map12\n");
 			return -1;
