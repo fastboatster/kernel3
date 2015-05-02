@@ -517,11 +517,13 @@ special_file_mmap(vnode_t *file, vmarea_t *vma, mmobj_t **ret)
 	/*    NOT_YET_IMPLEMENTED("VM: special_file_mmap");
 	 return 0;*/
 	KASSERT(file);
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
 	KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
-	KASSERT(
-			(file->vn_cdev)
-					&& "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
+	KASSERT((file->vn_cdev)&& "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
 	KASSERT(file->vn_cdev->cd_ops && file->vn_cdev->cd_ops->mmap);
+	dbg(DBG_PRINT, "(GRADING3A 5.a)\n");
 	bytedev_t* look = file->vn_cdev = bytedev_lookup(file->vn_devid);
 	int retval = look->cd_ops->mmap(file, vma, ret);
 	return retval;
@@ -534,10 +536,11 @@ special_file_mmap(vnode_t *file, vmarea_t *vma, mmobj_t **ret)
  * Do not worry about this until VM.
  */
 static int
-special_file_fillpage(vnode_t *file, off_t offset, void *pagebuf)
+special_file_fillpage(vnode_t *file, off_t offset, void *pagebuf) /*:DOESNT EXECUTE*/
 {
       /*  NOT_YET_IMPLEMENTED("VM: special_file_fillpage");
         return 0;*/
+	dbg(DBG_PRINT, "VNODE2\n");
 	KASSERT(file);
 			KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
 			KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
@@ -552,10 +555,11 @@ special_file_fillpage(vnode_t *file, off_t offset, void *pagebuf)
  * Do not worry about this until VM.
  */
 static int
-special_file_dirtypage(vnode_t *file, off_t offset)
+special_file_dirtypage(vnode_t *file, off_t offset) /*:DOESNT EXECUTE*/
 {
        /* NOT_YET_IMPLEMENTED("VM: special_file_dirtypage");
         return 0;*/
+	dbg(DBG_PRINT, "VNODE3\n");
 	KASSERT(file);
 			KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
 			KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
@@ -570,10 +574,11 @@ special_file_dirtypage(vnode_t *file, off_t offset)
  * Do not worry about this until VM.
  */
 static int
-special_file_cleanpage(vnode_t *file, off_t offset, void *pagebuf)
+special_file_cleanpage(vnode_t *file, off_t offset, void *pagebuf) /*:DOESNT EXECUTE*/
 {
      /*   NOT_YET_IMPLEMENTED("VM: special_file_cleanpage");
         return 0;*/
+	dbg(DBG_PRINT, "VNODE4\n");
         KASSERT(file);
         		KASSERT(S_ISCHR(file->vn_mode) && "because these ops only assigned if vnode represents a special file");
         		KASSERT((file->vn_cdev) && "because open shouldn\'t have let us arrive here if vn_cdev was NULL");
