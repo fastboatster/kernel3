@@ -61,11 +61,11 @@ do_mmap(void *addr, size_t len, int prot, int flags,
 	if ((prot & PROT_READ) && (flags & MAP_FIXED) && (flags & MAP_PRIVATE) && !(prot & PROT_WRITE)) {
 		return -EINVAL;
 	}
-	if(USER_MEM_LOW > addr && addr != 0)
+	if((void*)USER_MEM_LOW > addr && addr != 0)
 	{
 		return -EINVAL;
 	};
-	if (addr > USER_MEM_HIGH) {
+	if (addr > (void*) USER_MEM_HIGH) {
 		return -EINVAL;
 	};
 	/*addr = (uintptr_t) addr;*/
