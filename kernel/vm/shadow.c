@@ -215,6 +215,7 @@ shadow_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 			dbg(DBG_PRINT, "(shadow16)\n");
 			int temp = pframe_get(temp_mmobj, pagenum, &page);
 			if(temp < 0) {
+				dbg(DBG_PRINT, "(GRADING3 D.4)\n");
 				return temp;
 			}
 			if(page) {

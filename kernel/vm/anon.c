@@ -165,6 +165,7 @@ anon_lookuppage(mmobj_t *o, uint32_t pagenum, int forwrite, pframe_t **pf)
 	pframe_t* page = NULL;
 	int temp = pframe_get(o, pagenum, &page);
 	if(temp < 0) {
+		dbg(DBG_PRINT, "(GRADING3 D.4)\n");
 		return temp;
 	}
 	if(page) {
