@@ -183,7 +183,7 @@ dir_namev(const char *pathname, size_t *namelen, const char **name,
 			}
 
 			if(plen > 0) { /* empty name */
-				char temp_name[plen+1];
+				char temp_name[NAME_LEN+1];
 				memcpy(temp_name, pname, plen);
 				temp_name[plen] = '\0';
 				dbg(DBG_PRINT, "Look for %s\n", temp_name);
